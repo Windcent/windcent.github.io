@@ -41,13 +41,27 @@
             color: #806619;
             font-weight: 700;
         }
-        a {
+        h3 {
+            color: #806619;
+            font-weight: 700;
+        }
+        .ylink {
             color: #806619;
             text-decoration: none;
             font-weight: 700;
         }
-        a:hover {
-            color: #555;
+        .ylink:hover {
+            color: #d8b133;
+            text-decoration: underline;
+        }
+        .blklink {
+            color: #000000;
+            text-decoration: none;
+            font-weight: 700;
+        }
+        .blklink:hover {
+            color: #696969;
+            text-decoration: underline;
         }
         .section {
             margin: 20px 0;
@@ -55,6 +69,11 @@
         .section h2 {
             border-bottom: 2px solid #000000;
             padding-bottom: 10px;
+        }
+        .section h3 {
+            border-bottom: 1px solid #000000;
+            width: fit-content;
+            padding-bottom: 5px;
         }
         .section p {
             margin: 10px 0;
@@ -75,15 +94,6 @@
             font-style: normal;
             font-weight: 400;
             text-decoration: underline;
-        }
-        a {
-        color: #806619;
-        text-decoration: none;
-        font-weight: 700;
-        }
-        a:hover {
-        color: #d8b133;
-        text-decoration: underline;
         }
     </style>
 </head>
@@ -107,7 +117,7 @@
         <section class="section">
             <h2>About Me</h2>
             <p>
-                I am a <strong>Master's student in Engineering</strong> at the <strong>Université du Québec à Rimouski (UQAR)</strong>, specializing in <strong>electrical engineering</strong>, <strong>data science</strong> and <strong>system modeling</strong>. My research focuses on <strong>real-time fuel consumption estimation models for ships</strong>, collaborating with <a href="https://opdaq.com/en/home/">OpDAQ Systems</a>. I am passionate about applying technology to solve real-world challenges. My interests span across <strong>sciences</strong>, <strong>technologies</strong>, and <strong>fabrication</strong>, and I actively contribute to academic and technical communities.
+                I am a <strong>Master's student in Engineering</strong> at the <strong>Université du Québec à Rimouski (UQAR)</strong>, specializing in <strong>electrical engineering</strong>, <strong>data science</strong> and <strong>system modeling</strong>. My research focuses on <strong>real-time fuel consumption estimation models for ships</strong>, collaborating with <a class="ylink" href="https://opdaq.com/en/home/">OpDAQ Systems</a>. I am passionate about applying technology to solve real-world challenges. My interests span across <strong>sciences</strong>, <strong>technologies</strong>, and <strong>fabrication</strong>, and I actively contribute to academic and technical communities.
             </p>
         </section>
 
@@ -125,7 +135,7 @@
         <section class="section">
             <h2>Professional Experience</h2>
             <p>
-                <strong>Research Assistant (<a href="https://www.uqar.ca/">UQAR</a>)</strong><br>
+                <strong>Research Assistant (<a class="ylink" href="https://www.uqar.ca/">UQAR</a>)</strong><br>
                 <em>2022 - Present</em><br>
                 - Developed <strong>power electronics simulation models</strong> using EMTP and MatLab.<br>
                 - Designed <strong>modular architectures</strong> for Industry 4.0 control systems.<br>
@@ -133,14 +143,14 @@
                 - Prepared <strong>technical reports</strong>.
             </p>
             <p>
-                <strong>Teaching Assistant (<a href="https://www.uqar.ca/">UQAR</a>)</strong><br>
+                <strong>Teaching Assistant (<a class="ylink" href="https://www.uqar.ca/">UQAR</a>)</strong><br>
                 <em>2023 - Present</em><br>
                 - Guided students in <strong>design projects</strong>.<br>
                 - Assisted in <strong>mechanical/electrical design</strong> and <strong>programming</strong>.<br>
                 - Supervised exams.
             </p>
             <p>
-                <strong>System Developer (<a href="https://opdaq.com/en/home/">OpDAQ Systems</a>)</strong><br>
+                <strong>System Developer (<a class="ylink" href="https://opdaq.com/en/home/">OpDAQ Systems</a>)</strong><br>
                 <em>2021 - 2023</em><br>
                 - Developed <strong>LabVIEW modules</strong> for the OpHMI interface.
             </p>
@@ -149,12 +159,12 @@
         <section class="section">
             <h2>Education</h2>
             <p>
-                <strong><a href="https://www.uqar.ca/programmes-domaines-detudes/maitrise-en-ingenierie/" style="font-weight: 700; color: #000000;">Master's in Engineering (M.Sc.A.)</a></strong><br>
+                <strong><a class="blklink" href="https://www.uqar.ca/programmes-domaines-detudes/maitrise-en-ingenierie/">Master's in Engineering (M.Sc.A.)</a></strong><br>
                 Université du Québec à Rimouski, <em>2023-2025</em><br>
                 <em>Research Project:</em> Real-time fuel consumption estimation model for ships (collaboration with OpDAQ Systems).
             </p>
             <p>
-                <strong><a href="https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-genie-electrique-base-dec-techniques-ou-lequivalent/" style="font-weight: 700; color: #000000;">Bachelor's in Electrical Engineering</a></strong><br>
+                <strong><a class="blklink" href="https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-genie-electrique-base-dec-techniques-ou-lequivalent/">Bachelor's in Electrical Engineering</a></strong><br>
                 Université du Québec à Rimouski, <em>2019-2023</em>
             </p>
             <p>
@@ -174,6 +184,24 @@
         </section>
 
         <section class="section">
+            <h2>Events</h2>
+
+            <h3>Presenting</h3>
+                <p>
+                    <strong><a class="blklink" href="https://inrs.ca/en/research/joint-research-units/inrs-uqar-joint-research-unit-in-digital-transformation-in-support-of-regional-development/">UMR INRS-UQAR Seminar - Rimouski - June 5-6 2025</a></strong>
+                </p>
+                <p>
+                    <strong><a class="blklink" href="https://www.uqar.ca/forum-innovation-ingenierie-informatique-et-entrepreneuriat/">FI3E - Rimouski - April 23rd 2025</a></strong>
+                </p>
+                <p>
+                    <strong><a class="blklink" href="https://halifax24.oceansconference.org/">OCEANS 2024 - Halifax - September 23-26 2024</a></strong>
+                </p>
+
+            <h3>Attending</h3>
+
+        </section>
+
+        <section class="section">
             <h2>Community Involvement</h2>
             <p>
                 - <strong>President</strong> of the UQAR Amateur Radio Club (VA2UQR), <em>2020–Present</em><br>
@@ -182,6 +210,17 @@
             </p>
         </section>
 
+<<<<<<< HEAD
+=======
+        <section class="section">
+            <h2>Contact</h2>
+            <p>
+                <a class="ylink" href="mailto:stpvoo08@uqar.ca">stpvoo08@uqar.ca</a><br>
+                <a class="ylink" href="https://www.linkedin.com/in/vincent-s-752324a8/">LinkedIn Profile</a><br>
+                <a class="ylink" href="https://www.researchgate.net/profile/Vincent-St-Pierre-2?ev=hdr_xprf">ResearchGate Profile</a>
+            </p>
+        </section>
+>>>>>>> c17ec525685953de356083d29fae442e1f642689
     </div>
 
     <footer>
