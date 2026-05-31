@@ -188,6 +188,35 @@
             margin: 15px 0;
         }
 
+        .btn-container {
+            text-align: right;
+            margin-bottom: 20px;
+        }
+
+        .retro-btn {
+            background: transparent;
+            border: 1px solid var(--terminal-color);
+            color: var(--terminal-color);
+            font-family: 'VT323', monospace;
+            font-size: 0.8em;
+            padding: 4px 12px;
+            cursor: pointer;
+            text-shadow: var(--terminal-glow);
+            box-shadow: 0 0 2px var(--terminal-color);
+            transition: all 0.2s;
+        }
+
+        .retro-btn:hover {
+            background-color: var(--terminal-color);
+            color: #000;
+            text-shadow: none;
+            box-shadow: 0 0 8px var(--terminal-color);
+        }
+
+        .retro-btn:active {
+            transform: scale(0.95);
+        }
+
         footer {
             border-top: 2px solid var(--terminal-color);
             color: var(--terminal-color);
@@ -323,6 +352,9 @@
         </header>
 
         <div class="container">
+            <div class="btn-container">
+                <button id="toggle-all-btn" class="retro-btn">[ EXPAND ALL ]</button>
+            </div>
 
             <details class="section" open>
                 <summary><h2>Contact</h2></summary>
@@ -464,6 +496,16 @@
             </details>
 
             <details class="section">
+                <summary><h2>Academic Service</h2></summary>
+                <p>
+                    - <strong>Peer Reviewer</strong>, IEEE VPPC 2026 (Lyon, France)<br>
+                    &nbsp;&nbsp;<em>"Battery Replacement Value From the EV Owner Perspective Considering Vehicle Age"</em><br>
+                    - <strong>Peer Reviewer</strong>, IEEE VPPC 2026 (Lyon, France)<br>
+                    &nbsp;&nbsp;<em>"Real-World energy consumption variability of an electric vehicle on fixed route"</em>
+                </p>
+            </details>
+
+            <details class="section">
                 <summary><h2>Community Involvement</h2></summary>
                 <p>
                     - <strong>President</strong> of the UQAR Amateur Radio Club (VA2UQR), <em>2020–Present</em><br>
@@ -480,6 +522,26 @@
             <p>&copy; 2025 Vincent St-Pierre. All rights reserved.</p>
         </footer>
     </div>
+    <script>
+        const btn = document.getElementById('toggle-all-btn');
+        const details = document.querySelectorAll('details.section');
+
+        btn.addEventListener('click', () => {
+            const anyClosed = Array.from(details).some(d => !d.open);
+            details.forEach(d => {
+                d.open = anyClosed;
+            });
+            btn.textContent = anyClosed ? '[ COLLAPSE ALL ]' : '[ EXPAND ALL ]';
+        });
+
+        // Sync button text on manual toggle
+        details.forEach(d => {
+            d.addEventListener('toggle', () => {
+                const anyClosed = Array.from(details).some(d => !d.open);
+                btn.textContent = anyClosed ? '[ EXPAND ALL ]' : '[ COLLAPSE ALL ]';
+            });
+        });
+    </script>
 </body>
 
 </html>
