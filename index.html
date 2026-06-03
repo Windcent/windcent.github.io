@@ -10,13 +10,18 @@
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
         :root {
-            --terminal-color: #ffb000;          /* Retro Amber */
-            --terminal-color-rgb: 255, 176, 0;  /* RGB representation for opacity overlays */
+            --terminal-color: #ffb000;
+            /* Retro Amber */
+            --terminal-color-rgb: 255, 176, 0;
+            /* RGB representation for opacity overlays */
             --terminal-glow: 0 0 5px rgba(255, 176, 0, 0.7);
-            --bg-color: #140b00;                /* Warm dark charcoal/brown background */
-            --alert-color: #ff3333;             /* High contrast red for errors/warnings */
+            --bg-color: #140b00;
+            /* Warm dark charcoal/brown background */
+            --alert-color: #ff3333;
+            /* High contrast red for errors/warnings */
             --alert-color-rgb: 255, 51, 51;
-            --highlight-color: #d8b140;          /* Warm Darker Gold */
+            --highlight-color: #d8b140;
+            /* Warm Darker Gold */
             --highlight-glow: 0 0 5px rgba(216, 177, 64, 0.4);
         }
 
@@ -36,6 +41,7 @@
             color: #000;
             text-shadow: none;
         }
+
         ::-moz-selection {
             background: var(--terminal-color);
             color: #000;
@@ -57,7 +63,10 @@
             content: " ";
             display: block;
             position: fixed;
-            top: 0; left: 0; bottom: 0; right: 0;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
             z-index: 20;
             background-size: 100% 2px, 3px 100%;
@@ -68,7 +77,10 @@
             content: " ";
             display: block;
             position: fixed;
-            top: 0; left: 0; bottom: 0; right: 0;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
             background: rgba(255, 176, 0, 0.02);
             opacity: 0;
             z-index: 20;
@@ -77,9 +89,17 @@
         }
 
         @keyframes flicker {
-            0% { opacity: 0.015; }
-            50% { opacity: 0.045; }
-            100% { opacity: 0.025; }
+            0% {
+                opacity: 0.015;
+            }
+
+            50% {
+                opacity: 0.045;
+            }
+
+            100% {
+                opacity: 0.025;
+            }
         }
 
         header {
@@ -128,12 +148,14 @@
             margin-bottom: 0.25rem;
         }
 
-        .ylink, .blklink {
+        .ylink,
+        .blklink {
             color: var(--terminal-color);
             text-decoration: underline;
         }
 
-        .ylink:hover, .blklink:hover {
+        .ylink:hover,
+        .blklink:hover {
             background-color: var(--terminal-color);
             color: #000;
             text-shadow: none;
@@ -184,7 +206,8 @@
             padding-bottom: 5px;
         }
 
-        .section p, .section ul {
+        .section p,
+        .section ul {
             margin: 15px 0;
         }
 
@@ -270,12 +293,35 @@
             white-space: pre-wrap;
         }
 
-        .boot-line:nth-child(1) { animation: showLine 0s forwards; animation-delay: 0.1s; }
-        .boot-line:nth-child(2) { animation: showLine 0s forwards; animation-delay: 0.3s; }
-        .boot-line:nth-child(3) { animation: showLine 0s forwards; animation-delay: 0.5s; }
-        .boot-line:nth-child(4) { animation: showLine 0s forwards; animation-delay: 0.7s; }
-        .boot-line:nth-child(5) { animation: showLine 0s forwards; animation-delay: 0.8s; }
-        .boot-line:nth-child(6) { animation: showLine 0s forwards; animation-delay: 2.1s; }
+        .boot-line:nth-child(1) {
+            animation: showLine 0s forwards;
+            animation-delay: 0.1s;
+        }
+
+        .boot-line:nth-child(2) {
+            animation: showLine 0s forwards;
+            animation-delay: 0.3s;
+        }
+
+        .boot-line:nth-child(3) {
+            animation: showLine 0s forwards;
+            animation-delay: 0.5s;
+        }
+
+        .boot-line:nth-child(4) {
+            animation: showLine 0s forwards;
+            animation-delay: 0.7s;
+        }
+
+        .boot-line:nth-child(5) {
+            animation: showLine 0s forwards;
+            animation-delay: 0.8s;
+        }
+
+        .boot-line:nth-child(6) {
+            animation: showLine 0s forwards;
+            animation-delay: 2.1s;
+        }
 
         .progress-bar-wrapper {
             display: flex;
@@ -309,11 +355,15 @@
         }
 
         @keyframes showLine {
-            to { opacity: 1; }
+            to {
+                opacity: 1;
+            }
         }
 
         @keyframes loadBar {
-            to { width: 100%; }
+            to {
+                width: 100%;
+            }
         }
 
         @keyframes hideBoot {
@@ -324,8 +374,16 @@
         }
 
         @keyframes cursor-blink {
-            0%, 49% { opacity: 1; }
-            50%, 100% { opacity: 0; }
+
+            0%,
+            49% {
+                opacity: 1;
+            }
+
+            50%,
+            100% {
+                opacity: 0;
+            }
         }
     </style>
 </head>
@@ -357,43 +415,56 @@
             </div>
 
             <details class="section" open>
-                <summary><h2>Contact</h2></summary>
+                <summary>
+                    <h2>Contact</h2>
+                </summary>
                 <p>
                     <a class="ylink"
                         href="mailto:vincent.st-pierre3@usherbrooke.ca">vincent.st-pierre3@usherbrooke.ca</a><br>
                     <a class="ylink" href="https://www.linkedin.com/in/vincent-s-752324a8/">LinkedIn Profile</a><br>
                     <a class="ylink" href="https://github.com/Windcent">GitHub Profile</a><br>
                     <a class="ylink"
-                        href="https://www.researchgate.net/profile/Vincent-St-Pierre-2?ev=hdr_xprf">ResearchGate Profile</a>
+                        href="https://www.researchgate.net/profile/Vincent-St-Pierre-2?ev=hdr_xprf">ResearchGate
+                        Profile</a>
                 </p>
             </details>
 
             <details class="section">
-                <summary><h2>About Me</h2></summary>
+                <summary>
+                    <h2>About Me</h2>
+                </summary>
                 <p>
-                    I am a <strong>PhD student in electrical engineering</strong> at the <strong>Université de Sherbrooke
+                    I am a <strong>PhD student in electrical engineering</strong> at the <strong>Université de
+                        Sherbrooke
                     </strong>, specializing in <strong>system modeling</strong> and <strong>optimization</strong>. My
-                    research focuses on <strong>electrical marine propulsion system </strong>integration in the context of
-                    lobster fishing boats. I am passionate about applying technology to solve real-world challenges and my
+                    research focuses on <strong>electrical marine propulsion system </strong>integration in the context
+                    of
+                    lobster fishing boats. I am passionate about applying technology to solve real-world challenges and
+                    my
                     interests span across <strong>sciences</strong>, <strong>technologies</strong>, and
                     <strong>fabrication</strong>.
                 </p>
             </details>
 
             <details class="section">
-                <summary><h2>Skills</h2></summary>
+                <summary>
+                    <h2>Skills</h2>
+                </summary>
                 <ul>
                     <li><strong>Programming Languages:</strong> Python, C, LabVIEW</li>
                     <li><strong>Tools:</strong> Latex, Matlab, Simulink, EMTP, Onshape, Qelectrotech, VScode, GIT</li>
                     <li><strong>Environments:</strong> Windows, Linux (Ubuntu/Debian)</li>
                     <li><strong>Languages:</strong> English, French</li>
-                    <li><strong>Certifications:</strong> Advanced Amateur Radio License (VE2NYA - VA2NYA - VA2UQR), Small
+                    <li><strong>Certifications:</strong> Advanced Amateur Radio License (VE2NYA - VA2NYA - VA2UQR),
+                        Small
                         Unmanned Aircraft System Pilot Certificate (SATP)</li>
                 </ul>
             </details>
 
             <details class="section">
-                <summary><h2>Professional Experience</h2></summary>
+                <summary>
+                    <h2>Professional Experience</h2>
+                </summary>
                 <p>
                     <strong>Research Assistant (<a class="ylink" href="https://www.uqar.ca/">UQAR</a>)</strong><br>
                     <em>2022 - 2025</em><br>
@@ -418,14 +489,17 @@
             </details>
 
             <details class="section">
-                <summary><h2>Education</h2></summary>
+                <summary>
+                    <h2>Education</h2>
+                </summary>
                 <p>
                     <strong><a class="blklink"
                             href="https://www.usherbrooke.ca/admission/programme/710/doctorat-en-genie-electrique/">Doctorate
                             in
                             Electrical Engineering (IN PROGRESS)</a></strong><br>
                     Université de Sherbrooke, <em>2026 - PRESENT</em><br>
-                    <em>Research Project:</em> Electrical propulsion system modelisation and optimization in the context of
+                    <em>Research Project:</em> Electrical propulsion system modelisation and optimization in the context
+                    of
                     lobster fishing boats.
                 </p>
                 <p>
@@ -449,15 +523,19 @@
             </details>
 
             <details class="section">
-                <summary><h2>Publications</h2></summary>
+                <summary>
+                    <h2>Publications</h2>
+                </summary>
                 <p>
-                    V. St-Pierre, M. Berger, T. Pineau, and C. Massicotte, <strong>"Toward energy-efficient navigation: A
+                    V. St-Pierre, M. Berger, T. Pineau, and C. Massicotte, <strong>"Toward energy-efficient navigation:
+                        A
                         data-driven approach for flowmeterless estimation of ship's engine fuel consumption in
                         real-time,"</strong> in OCEANS 2024 - Halifax, 2024, pp. 1-5, doi:
                     10.1109/OCEAN555160.2024.10754.095.
                 </p>
                 <p>
-                    V. Beaulieu-Gagnon, O. Couillard, V. St-Pierre, M. Berger, S. Duquette, and M. Bahoura, <strong>"Dual
+                    V. Beaulieu-Gagnon, O. Couillard, V. St-Pierre, M. Berger, S. Duquette, and M. Bahoura,
+                    <strong>"Dual
                         active bridge converter-enabled flexible solar photovoltaic system emulator for a ship-testing
                         electrical microgrid,"</strong> in OCEANS 2024 - Halifax, 2024, pp. 1-10, doi:
                     10.1109/OCEAN555160.2024.10754.413.
@@ -465,13 +543,44 @@
             </details>
 
             <details class="section">
-                <summary><h2>Events</h2></summary>
+                <summary>
+                    <h2>Media</h2>
+                </summary>
+                <p>
+                    - <a class="ylink" href="Poster_PhD.pdf" target="_blank" rel="noopener noreferrer">PhD
+                        project</a><br>
+                    - <a class="ylink" href="Poster_MScA.pdf" target="_blank" rel="noopener noreferrer">Master's
+                        project</a>
+                </p>
+            </details>
+
+            <details class="section">
+                <summary>
+                    <h2>Events</h2>
+                </summary>
 
                 <h3>Presenting</h3>
                 <p>
                     <strong><a class="blklink"
-                            href="https://inrs.ca/en/research/joint-research-units/inrs-uqar-joint-research-unit-in-digital-transformation-in-support-of-regional-development/">UMR
-                            INRS-UQAR Seminar - Rimouski - June 5-6 2025</a></strong>
+                            href="https://inrs.ca/la-recherche/chaires-groupes-et-reseaux-de-recherche/repertoire-des-chaires-groupes-et-reseaux-de-recherche/unite-mixte-de-recherche-inrs-uqtr-sur-les-materiaux-et-les-technologies-pour-la-transition-energetique/ecole-internationale-dete-batteries-et-electrification-des-transports/">École
+                            internationale d'été - Batteries et électrification des transports - Trois-Rivières - June
+                            8-12 2026</a></strong>
+                </p>
+                <p>
+                    <strong><a class="blklink"
+                            href="https://inrs.ca/linrs/nouvelles/evenements/seminaire-etudiant-de-lumr-inrs-uqar-numerique-et-territoires/">Séminaire
+                            étudiant de l'UMR INRS-UQAR - Numérique et territoires - Rimouski - June 4 2026</a></strong>
+                </p>
+                <p>
+                    <strong><a class="blklink"
+                            href="https://www.polymtl.ca/programmes/cours/c-spec-lorer-summer-school">LORER Summer
+                            School - Polytechnique Montréal - August 4-8 2025</a></strong>
+                </p>
+                <p>
+                    <strong><a class="blklink"
+                            href="https://inrs.ca/en/research/joint-research-units/inrs-uqar-joint-research-unit-in-digital-transformation-in-support-of-regional-development/">Séminaire
+                            étudiant de l'UMR INRS-UQAR - Numérique et territoires - Rimouski - June 5-6
+                            2025</a></strong>
                 </p>
                 <p>
                     <strong><a class="blklink" href="https://www.rqm.quebec/congres/">Congrès Avenir Maritime -
@@ -479,7 +588,8 @@
                 </p>
                 <p>
                     <strong><a class="blklink"
-                            href="https://www.uqar.ca/forum-innovation-ingenierie-informatique-et-entrepreneuriat/">FI3E -
+                            href="https://www.uqar.ca/forum-innovation-ingenierie-informatique-et-entrepreneuriat/">FI3E
+                            -
                             Rimouski - April 23rd 2025</a></strong>
                 </p>
                 <p>
@@ -490,28 +600,41 @@
                 <h3>Attending</h3>
                 <p>
                     <strong><a class="blklink"
+                            href="https://st-laurent.org/evenement/assises-quebecoises-du-secteur-maritime/">Assises
+                            québécoises du secteur maritime 2026 - Trois-Rivières - May 5-6 2026</a></strong>
+                </p>
+                <p>
+                    <strong><a class="blklink"
                             href="https://st-laurent.org/evenement/assises-quebecoises-du-secteur-maritime-aqsm-2025/">Assises
                             québécoises du secteur maritime 2025 - Lévis - May 13-14 2025</a></strong>
                 </p>
             </details>
 
             <details class="section">
-                <summary><h2>Academic Service</h2></summary>
+                <summary>
+                    <h2>Academic Service</h2>
+                </summary>
                 <p>
                     - <strong>Peer Reviewer</strong>, IEEE VPPC 2026 (Lyon, France)<br>
-                    &nbsp;&nbsp;<em>"Battery Replacement Value From the EV Owner Perspective Considering Vehicle Age"</em><br>
+                    &nbsp;&nbsp;<em>"Battery Replacement Value From the EV Owner Perspective Considering Vehicle
+                        Age"</em><br>
                     - <strong>Peer Reviewer</strong>, IEEE VPPC 2026 (Lyon, France)<br>
-                    &nbsp;&nbsp;<em>"Real-World energy consumption variability of an electric vehicle on fixed route"</em>
+                    &nbsp;&nbsp;<em>"Real-World energy consumption variability of an electric vehicle on fixed
+                        route"</em>
                 </p>
             </details>
 
             <details class="section">
-                <summary><h2>Community Involvement</h2></summary>
+                <summary>
+                    <h2>Community Involvement</h2>
+                </summary>
                 <p>
                     - <strong>President</strong> of the UQAR Amateur Radio Club (VA2UQR), <em>2020–Present</em><br>
-                    - <strong>Promotion Agent</strong> for the Department of Mathematics, Computer Science, and Engineering,
+                    - <strong>Promotion Agent</strong> for the Department of Mathematics, Computer Science, and
+                    Engineering,
                     <em>2024–2025</em><br>
-                    - <strong>Promotion Agent</strong> for the Telecommunications and Networks Program at CÉGEP de Rimouski,
+                    - <strong>Promotion Agent</strong> for the Telecommunications and Networks Program at CÉGEP de
+                    Rimouski,
                     <em>2017–2019</em>
                 </p>
             </details>
