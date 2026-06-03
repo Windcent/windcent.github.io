@@ -1,0 +1,3 @@
+[submodule "SVGTracer"]
+	path = SVGTracer
+	url = https://github.com/Windcent/SVGTracer.git
