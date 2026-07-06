@@ -1,3 +1,6 @@
 [submodule "SVGTracer"]
 	path = SVGTracer
 	url = https://github.com/Windcent/SVGTracer.git
+[submodule "outboards_data"]
+	path = outboards_data
+	url = https://github.com/Windcent/outboards_data.git
