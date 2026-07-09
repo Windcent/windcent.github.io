@@ -4,3 +4,6 @@
 [submodule "outboards_data"]
 	path = outboards_data
 	url = https://github.com/Windcent/outboards_data.git
+[submodule "FlowTracer"]
+	path = FlowTracer
+	url = https://github.com/Windcent/FlowTracer.git
