@@ -7,3 +7,6 @@
 [submodule "FlowTracer"]
 	path = FlowTracer
 	url = https://github.com/Windcent/FlowTracer.git
+[submodule "SlideMAKER"]
+	path = SlideMAKER
+	url = https://github.com/Windcent/SlideMAKER.git
