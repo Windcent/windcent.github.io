@@ -276,8 +276,17 @@
             font-family: 'VT323', monospace;
             color: var(--terminal-color);
             text-shadow: var(--terminal-glow);
+            user-select: none;
             animation: hideBoot 0.4s forwards;
             animation-delay: 2.8s;
+        }
+
+        #boot-screen.skipped {
+            animation: none;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.15s ease-out, visibility 0.15s ease-out;
         }
 
         .boot-content {
@@ -650,7 +659,6 @@
                 </summary>
                 <p>
                     - <a class="ylink" href="./SlideMAKER/index.html" target="_blank" rel="noopener noreferrer">SlideMAKER</a> - Modern web-based presentation studio and slide editor<br>
-                    - <a class="ylink" href="./FlowTracer/index.html" target="_blank" rel="noopener noreferrer">FlowTracer</a> - Visual Mermaid graph tracer and flow diagram tool<br>
                     - <a class="ylink" href="./SVGTracer/SVGTracer.html" target="_blank" rel="noopener noreferrer">SVGTracer</a> - Web application for tracing SVG paths<br>
                     - <a class="ylink" href="./outboards_data/index.html" target="_blank" rel="noopener noreferrer">Outboards Performance Viewer</a> - Interactive dashboard for outboard motor performance data
                 </p>
@@ -663,6 +671,27 @@
         </footer>
     </div>
     <script>
+        const bootScreen = document.getElementById('boot-screen');
+        if (bootScreen) {
+            const skipBoot = () => {
+                bootScreen.classList.add('skipped');
+                document.removeEventListener('keydown', onBootKeydown);
+            };
+            const onBootKeydown = (e) => {
+                if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    skipBoot();
+                }
+            };
+            bootScreen.addEventListener('click', skipBoot, { once: true });
+            document.addEventListener('keydown', onBootKeydown);
+            bootScreen.addEventListener('animationend', (e) => {
+                if (e.animationName === 'hideBoot') {
+                    document.removeEventListener('keydown', onBootKeydown);
+                }
+            });
+        }
+
         const btn = document.getElementById('toggle-all-btn');
         const details = document.querySelectorAll('details.section');
 
