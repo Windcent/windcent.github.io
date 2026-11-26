@@ -1,0 +1,1530 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2-DOF Inverse Kinematics Lab - Vincent St-Pierre</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --terminal-color: #ffb000;
+            --terminal-color-rgb: 255, 176, 0;
+            --terminal-glow: 0 0 5px rgba(255, 176, 0, 0.7);
+            --bg-color: #140b00;
+            --panel-bg: rgba(255, 176, 0, 0.035);
+            --alert-color: #ff3333;
+            --alert-color-rgb: 255, 51, 51;
+            --highlight-color: #d8b140;
+            --highlight-glow: 0 0 5px rgba(216, 177, 64, 0.4);
+            --dim-color: rgba(255, 176, 0, 0.45);
+            --math-font: 'Courier New', 'DejaVu Sans Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'VT323', monospace;
+            line-height: 1.25;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--terminal-color);
+            font-size: clamp(18px, 1.5vw, 24px);
+            text-shadow: var(--terminal-glow);
+        }
+
+        ::selection {
+            background: var(--terminal-color);
+            color: #000;
+            text-shadow: none;
+        }
+
+        ::-moz-selection {
+            background: var(--terminal-color);
+            color: #000;
+            text-shadow: none;
+        }
+
+        .crt {
+            background-color: var(--bg-color);
+            box-shadow: inset 0 0 150px rgba(0, 0, 0, 0.9);
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .crt::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background:
+                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+                linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 20;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        .crt::after {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: rgba(255, 176, 0, 0.02);
+            opacity: 0;
+            z-index: 20;
+            pointer-events: none;
+            animation: flicker 0.15s infinite;
+        }
+
+        @keyframes flicker {
+            0% { opacity: 0.015; }
+            50% { opacity: 0.04; }
+            100% { opacity: 0.025; }
+        }
+
+        .top-nav {
+            width: 94%;
+            max-width: 1240px;
+            margin: 0 auto 10px auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        header {
+            width: 94%;
+            max-width: 1240px;
+            margin: 0 auto 1.5rem auto;
+            border-bottom: 4px double var(--terminal-color);
+            padding: 1.25rem 0 1.5rem 0;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        header h1 {
+            color: var(--terminal-color);
+            font-size: clamp(1.7em, 3.2vw, 2.5em);
+            margin: 0;
+            text-shadow: 0 0 10px rgba(255, 176, 0, 0.9);
+        }
+
+        header p {
+            color: var(--highlight-color);
+            font-size: 0.9em;
+            margin: 0.5rem 0 0 0;
+            letter-spacing: 3px;
+            text-shadow: var(--highlight-glow);
+        }
+
+        .container {
+            width: 94%;
+            max-width: 1240px;
+            margin: 0 auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+        }
+
+        .ylink {
+            color: var(--terminal-color);
+            text-decoration: underline;
+        }
+
+        .ylink:hover {
+            background-color: var(--terminal-color);
+            color: #000;
+            text-shadow: none;
+            text-decoration: none;
+        }
+
+        .retro-btn {
+            background: transparent;
+            border: 1px solid var(--terminal-color);
+            color: var(--terminal-color);
+            font-family: 'VT323', monospace;
+            font-size: 0.9em;
+            padding: 4px 12px;
+            cursor: pointer;
+            text-shadow: var(--terminal-glow);
+            box-shadow: 0 0 2px var(--terminal-color);
+            transition: all 0.15s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .retro-btn:hover,
+        .retro-btn.active {
+            background-color: var(--terminal-color);
+            color: #000;
+            text-shadow: none;
+            box-shadow: 0 0 8px var(--terminal-color);
+        }
+
+        .retro-btn:active {
+            transform: scale(0.96);
+        }
+
+        .workspace-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.45fr) minmax(300px, 1fr);
+            gap: 20px;
+            align-items: stretch;
+        }
+
+        .panel {
+            border: 1px solid var(--terminal-color);
+            background-color: var(--panel-bg);
+            box-shadow: 0 0 10px rgba(255, 176, 0, 0.12), inset 0 0 20px rgba(0, 0, 0, 0.55);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--terminal-color);
+            padding-bottom: 8px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .panel-header h2 {
+            margin: 0;
+            font-size: 1.2em;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .status-badge {
+            font-size: 0.85em;
+            padding: 2px 8px;
+            border: 1px solid var(--terminal-color);
+            letter-spacing: 1px;
+        }
+
+        .status-badge.out-of-reach {
+            border-color: var(--alert-color);
+            color: var(--alert-color);
+            text-shadow: 0 0 6px rgba(255, 51, 51, 0.8);
+            background: rgba(255, 51, 51, 0.1);
+        }
+
+        .canvas-wrap {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            min-height: 320px;
+            border: 1px solid rgba(255, 176, 0, 0.45);
+            background: radial-gradient(circle at center, rgba(255, 176, 0, 0.05) 0%, rgba(10, 5, 0, 0.92) 85%);
+            overflow: hidden;
+        }
+
+        canvas#arm-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+            touch-action: none;
+        }
+
+        canvas#arm-canvas.dragging {
+            cursor: grabbing;
+        }
+
+        .canvas-hint {
+            font-size: 0.85em;
+            color: var(--highlight-color);
+            text-shadow: var(--highlight-glow);
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        /* Controls panel */
+        .control-group {
+            border: 1px solid rgba(255, 176, 0, 0.35);
+            padding: 10px 12px;
+            background: rgba(0, 0, 0, 0.28);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .control-group-title {
+            font-size: 0.95em;
+            color: var(--highlight-color);
+            text-shadow: var(--highlight-glow);
+            border-bottom: 1px dashed rgba(255, 176, 0, 0.4);
+            padding-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .control-row {
+            display: grid;
+            grid-template-columns: 70px 1fr 84px;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .control-label {
+            font-size: 1.05em;
+            white-space: nowrap;
+        }
+
+        .math-sym {
+            font-family: var(--math-font);
+            font-weight: 700;
+            font-size: 0.86em;
+            letter-spacing: 0;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 176, 0, 0.22);
+            border: 1px solid rgba(255, 176, 0, 0.65);
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 18px;
+            background: var(--terminal-color);
+            border: 1px solid #000;
+            box-shadow: 0 0 6px var(--terminal-color);
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 14px;
+            height: 18px;
+            background: var(--terminal-color);
+            border: 1px solid #000;
+            border-radius: 0;
+            box-shadow: 0 0 6px var(--terminal-color);
+            cursor: pointer;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--terminal-color);
+            color: var(--terminal-color);
+            font-family: 'VT323', monospace;
+            font-size: 1em;
+            padding: 2px 6px;
+            text-align: right;
+            text-shadow: var(--terminal-glow);
+            outline: none;
+        }
+
+        input[type="number"]:focus {
+            background: rgba(255, 176, 0, 0.14);
+            box-shadow: 0 0 6px rgba(255, 176, 0, 0.6);
+        }
+
+        .readout-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .readout-box {
+            border: 1px solid rgba(255, 176, 0, 0.45);
+            padding: 6px 10px;
+            background: rgba(0, 0, 0, 0.45);
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 6px;
+        }
+
+        .readout-box .k {
+            color: var(--highlight-color);
+            font-size: 0.9em;
+        }
+
+        .readout-box .v {
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        /* Equations section */
+        .equations-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .eq-column {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .eq-column h3 {
+            margin: 0;
+            color: var(--highlight-color);
+            text-shadow: var(--highlight-glow);
+            border-bottom: 1px solid var(--highlight-color);
+            padding-bottom: 4px;
+            font-size: 1.05em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .eq-card {
+            border: 1px solid rgba(255, 176, 0, 0.35);
+            background: rgba(0, 0, 0, 0.35);
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .eq-title {
+            font-size: 0.85em;
+            color: var(--highlight-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .eq-formula {
+            font-family: var(--math-font);
+            font-size: clamp(13px, 1.05vw, 16px);
+            line-height: 1.5;
+            color: var(--terminal-color);
+            overflow-x: auto;
+            padding: 2px 0;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .eq-live {
+            font-family: var(--math-font);
+            font-size: clamp(12px, 0.95vw, 15px);
+            color: var(--highlight-color);
+            text-shadow: var(--highlight-glow);
+            border-top: 1px dashed rgba(255, 176, 0, 0.28);
+            padding-top: 5px;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .eq-live.alert {
+            color: var(--alert-color);
+            text-shadow: 0 0 6px rgba(255, 51, 51, 0.65);
+        }
+
+        .frac {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            vertical-align: middle;
+            margin: 0 3px;
+            line-height: 1.2;
+        }
+
+        .frac .num {
+            border-bottom: 1px solid var(--terminal-color);
+            padding: 0 4px 1px 4px;
+            text-align: center;
+        }
+
+        .frac .den {
+            padding: 1px 4px 0 4px;
+            text-align: center;
+        }
+
+        .sqrt {
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .sqrt-rad {
+            border-top: 1px solid var(--terminal-color);
+            padding: 0 3px;
+            margin-left: 1px;
+        }
+
+        footer {
+            width: 94%;
+            max-width: 1240px;
+            margin: 30px auto 0 auto;
+            border-top: 2px solid var(--terminal-color);
+            color: var(--terminal-color);
+            text-align: center;
+            padding: 1.2rem 0 0.5rem 0;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 920px) {
+            .workspace-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .equations-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="crt">
+        <nav class="top-nav">
+            <a class="retro-btn" href="../index.html">&lt;- BACK TO PROFILE</a>
+            <span style="opacity: 0.85;">MODULE: IK_2DOF_SIM.EXE</span>
+        </nav>
+
+        <header>
+            <h1>2-DOF Inverse Kinematics Lab</h1>
+            <p>Planar Manipulator &bull; Analytical Solver &bull; Live Equations</p>
+        </header>
+
+        <main class="container">
+            <section class="workspace-grid">
+                <!-- Interactive Canvas Panel -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>[ Arm Visualization ]</h2>
+                        <span id="reach-status" class="status-badge">STATUS: REACHABLE</span>
+                    </div>
+
+                    <div class="canvas-wrap">
+                        <canvas id="arm-canvas" aria-label="Interactive 2-DOF robotic arm visualization"></canvas>
+                    </div>
+
+                    <div class="canvas-hint">
+                        <span>DRAG END-EFFECTOR OR CLICK ANYWHERE ON GRID TO SET (x, y)</span>
+                        <span id="workspace-bounds">REACH: [0.30, 2.70]</span>
+                    </div>
+
+                    <div class="toolbar">
+                        <button id="btn-elbow-down" class="retro-btn active" type="button">[ ELBOW DOWN (+) ]</button>
+                        <button id="btn-elbow-up" class="retro-btn" type="button">[ ELBOW UP (-) ]</button>
+                        <button id="btn-unit" class="retro-btn" type="button">[ UNIT: DEG ]</button>
+                        <button id="btn-ghost" class="retro-btn active" type="button">[ ALT SOLUTION: ON ]</button>
+                        <button id="btn-trail" class="retro-btn active" type="button">[ TRAIL: ON ]</button>
+                        <button id="btn-reset" class="retro-btn" type="button">[ RESET ]</button>
+                    </div>
+                </div>
+
+                <!-- Controls & Live Readouts Panel -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>[ State &amp; Controls ]</h2>
+                        <span id="mode-badge" class="status-badge">MODE: IK</span>
+                    </div>
+
+                    <div class="readout-grid">
+                        <div class="readout-box">
+                            <span class="k">x</span>
+                            <span id="out-x" class="v">1.40</span>
+                        </div>
+                        <div class="readout-box">
+                            <span class="k">y</span>
+                            <span id="out-y" class="v">1.10</span>
+                        </div>
+                        <div class="readout-box">
+                            <span class="k"><span class="math-sym">&theta;<sub>1</sub></span></span>
+                            <span id="out-t1" class="v">0.0&deg;</span>
+                        </div>
+                        <div class="readout-box">
+                            <span class="k"><span class="math-sym">&theta;<sub>2</sub></span></span>
+                            <span id="out-t2" class="v">0.0&deg;</span>
+                        </div>
+                    </div>
+
+                    <!-- End-Effector (IK Inputs) -->
+                    <div class="control-group">
+                        <div class="control-group-title">
+                            <span>End-Effector Target (IK)</span>
+                            <span>(x, y)</span>
+                        </div>
+                        <div class="control-row">
+                            <label class="control-label" for="num-x">x</label>
+                            <input id="rng-x" type="range" min="-2.7" max="2.7" step="0.01" value="1.40">
+                            <input id="num-x" type="number" step="0.05" value="1.40">
+                        </div>
+                        <div class="control-row">
+                            <label class="control-label" for="num-y">y</label>
+                            <input id="rng-y" type="range" min="-2.7" max="2.7" step="0.01" value="1.10">
+                            <input id="num-y" type="number" step="0.05" value="1.10">
+                        </div>
+                    </div>
+
+                    <!-- Joint Angles (FK Inputs) -->
+                    <div class="control-group">
+                        <div class="control-group-title">
+                            <span>Joint Angles (FK)</span>
+                            <span id="angle-unit-label">DEG</span>
+                        </div>
+                        <div class="control-row">
+                            <label class="control-label" for="num-t1"><span class="math-sym">&theta;<sub>1</sub></span></label>
+                            <input id="rng-t1" type="range" min="-180" max="180" step="0.1" value="0">
+                            <input id="num-t1" type="number" step="1" value="0">
+                        </div>
+                        <div class="control-row">
+                            <label class="control-label" for="num-t2"><span class="math-sym">&theta;<sub>2</sub></span></label>
+                            <input id="rng-t2" type="range" min="-180" max="180" step="0.1" value="0">
+                            <input id="num-t2" type="number" step="1" value="0">
+                        </div>
+                    </div>
+
+                    <!-- Link Lengths -->
+                    <div class="control-group">
+                        <div class="control-group-title">
+                            <span>Link Geometry</span>
+                            <span>L1, L2</span>
+                        </div>
+                        <div class="control-row">
+                            <label class="control-label" for="num-l1"><span class="math-sym">L<sub>1</sub></span></label>
+                            <input id="rng-l1" type="range" min="0.4" max="2.2" step="0.05" value="1.50">
+                            <input id="num-l1" type="number" min="0.2" max="3.0" step="0.05" value="1.50">
+                        </div>
+                        <div class="control-row">
+                            <label class="control-label" for="num-l2"><span class="math-sym">L<sub>2</sub></span></label>
+                            <input id="rng-l2" type="range" min="0.4" max="2.2" step="0.05" value="1.20">
+                            <input id="num-l2" type="number" min="0.2" max="3.0" step="0.05" value="1.20">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Equations Panel -->
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>[ Analytical Equations &amp; Live Evaluation ]</h2>
+                    <span style="font-size: 0.85em; color: var(--highlight-color);">REAL-TIME SYMBOLIC + NUMERIC</span>
+                </div>
+
+                <div class="equations-grid">
+                    <!-- Inverse Kinematics Column -->
+                    <div class="eq-column">
+                        <h3>Inverse Kinematics (x, y &rarr; &theta;<sub>1</sub>, &theta;<sub>2</sub>)</h3>
+
+                        <div class="eq-card">
+                            <div class="eq-title">1. Radial Distance &amp; Workspace Check</div>
+                            <div class="eq-formula">
+                                <span>r = </span>
+                                <span class="sqrt">&radic;<span class="sqrt-rad">x&sup2; + y&sup2;</span></span>
+                                <span>,&nbsp;&nbsp;|L<sub>1</sub> &minus; L<sub>2</sub>| &le; r &le; L<sub>1</sub> + L<sub>2</sub></span>
+                            </div>
+                            <div id="live-r" class="eq-live">r = 0.000</div>
+                        </div>
+
+                        <div class="eq-card">
+                            <div class="eq-title">2. Elbow Angle &theta;<sub>2</sub> (Law of Cosines)</div>
+                            <div class="eq-formula">
+                                <span>cos(&theta;<sub>2</sub>) = </span>
+                                <span class="frac">
+                                    <span class="num">x&sup2; + y&sup2; &minus; L<sub>1</sub>&sup2; &minus; L<sub>2</sub>&sup2;</span>
+                                    <span class="den">2 &middot; L<sub>1</sub> &middot; L<sub>2</sub></span>
+                                </span>
+                            </div>
+                            <div class="eq-formula">
+                                <span>&theta;<sub>2</sub> = atan2(&plusmn;</span>
+                                <span class="sqrt">&radic;<span class="sqrt-rad">1 &minus; cos&sup2;(&theta;<sub>2</sub>)</span></span>
+                                <span>, cos(&theta;<sub>2</sub>))</span>
+                            </div>
+                            <div id="live-t2" class="eq-live">cos(&theta;2) = 0.000 &rArr; &theta;2 = 0.00&deg;</div>
+                        </div>
+
+                        <div class="eq-card">
+                            <div class="eq-title">3. Shoulder Angle &theta;<sub>1</sub></div>
+                            <div class="eq-formula">
+                                <span>&theta;<sub>1</sub> = atan2(y, x) &minus; atan2(L<sub>2</sub> sin(&theta;<sub>2</sub>), L<sub>1</sub> + L<sub>2</sub> cos(&theta;<sub>2</sub>))</span>
+                            </div>
+                            <div id="live-t1" class="eq-live">&theta;1 = 0.00&deg; &minus; 0.00&deg; = 0.00&deg;</div>
+                        </div>
+                    </div>
+
+                    <!-- Forward Kinematics Column -->
+                    <div class="eq-column">
+                        <h3>Forward Kinematics (&theta;<sub>1</sub>, &theta;<sub>2</sub> &rarr; x, y)</h3>
+
+                        <div class="eq-card">
+                            <div class="eq-title">1. Elbow Joint Position (x<sub>1</sub>, y<sub>1</sub>)</div>
+                            <div class="eq-formula">
+                                <span>x<sub>1</sub> = L<sub>1</sub> cos(&theta;<sub>1</sub>),&nbsp;&nbsp;y<sub>1</sub> = L<sub>1</sub> sin(&theta;<sub>1</sub>)</span>
+                            </div>
+                            <div id="live-elbow" class="eq-live">(x1, y1) = (0.000, 0.000)</div>
+                        </div>
+
+                        <div class="eq-card">
+                            <div class="eq-title">2. End-Effector Position (x, y)</div>
+                            <div class="eq-formula">
+                                <span>x = L<sub>1</sub> cos(&theta;<sub>1</sub>) + L<sub>2</sub> cos(&theta;<sub>1</sub> + &theta;<sub>2</sub>)</span>
+                            </div>
+                            <div class="eq-formula">
+                                <span>y = L<sub>1</sub> sin(&theta;<sub>1</sub>) + L<sub>2</sub> sin(&theta;<sub>1</sub> + &theta;<sub>2</sub>)</span>
+                            </div>
+                            <div id="live-fk" class="eq-live">(x, y) = (0.000, 0.000)</div>
+                        </div>
+
+                        <div class="eq-card">
+                            <div class="eq-title">3. Manipulator Jacobian Determinant</div>
+                            <div class="eq-formula">
+                                <span>det(J) = L<sub>1</sub> &middot; L<sub>2</sub> &middot; sin(&theta;<sub>2</sub>)</span>
+                            </div>
+                            <div id="live-det" class="eq-live">det(J) = 0.000 (NON-SINGULAR)</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 Vincent St-Pierre &bull; 2-DOF Inverse Kinematics Experiment</p>
+        </footer>
+    </div>
+
+    <script>
+        (() => {
+            const RAD2DEG = 180 / Math.PI;
+            const DEG2RAD = Math.PI / 180;
+
+            const state = {
+                L1: 1.50,
+                L2: 1.20,
+                targetX: 1.40,
+                targetY: 1.10,
+                clampedX: 1.40,
+                clampedY: 1.10,
+                theta1: 0,
+                theta2: 0,
+                altTheta1: 0,
+                altTheta2: 0,
+                elbowSign: 1, // +1 = elbow down (theta2 >= 0), -1 = elbow up (theta2 <= 0)
+                unit: 'deg',  // 'deg' or 'rad'
+                showGhost: true,
+                showTrail: true,
+                reachable: true,
+                mode: 'IK',
+                dragging: false,
+                trail: []
+            };
+
+            const canvas = document.getElementById('arm-canvas');
+            const ctx = canvas.getContext('2d');
+
+            // DOM Elements
+            const reachStatus = document.getElementById('reach-status');
+            const modeBadge = document.getElementById('mode-badge');
+            const workspaceBounds = document.getElementById('workspace-bounds');
+
+            const outX = document.getElementById('out-x');
+            const outY = document.getElementById('out-y');
+            const outT1 = document.getElementById('out-t1');
+            const outT2 = document.getElementById('out-t2');
+
+            const rngX = document.getElementById('rng-x');
+            const numX = document.getElementById('num-x');
+            const rngY = document.getElementById('rng-y');
+            const numY = document.getElementById('num-y');
+
+            const rngT1 = document.getElementById('rng-t1');
+            const numT1 = document.getElementById('num-t1');
+            const rngT2 = document.getElementById('rng-t2');
+            const numT2 = document.getElementById('num-t2');
+            const angleUnitLabel = document.getElementById('angle-unit-label');
+
+            const rngL1 = document.getElementById('rng-l1');
+            const numL1 = document.getElementById('num-l1');
+            const rngL2 = document.getElementById('rng-l2');
+            const numL2 = document.getElementById('num-l2');
+
+            const btnElbowDown = document.getElementById('btn-elbow-down');
+            const btnElbowUp = document.getElementById('btn-elbow-up');
+            const btnUnit = document.getElementById('btn-unit');
+            const btnGhost = document.getElementById('btn-ghost');
+            const btnTrail = document.getElementById('btn-trail');
+            const btnReset = document.getElementById('btn-reset');
+
+            const liveR = document.getElementById('live-r');
+            const liveT2 = document.getElementById('live-t2');
+            const liveT1 = document.getElementById('live-t1');
+            const liveElbow = document.getElementById('live-elbow');
+            const liveFK = document.getElementById('live-fk');
+            const liveDet = document.getElementById('live-det');
+
+            function normalizeAngle(rad) {
+                let a = ((rad + Math.PI) % (2 * Math.PI) + (2 * Math.PI)) % (2 * Math.PI) - Math.PI;
+                if (a <= -Math.PI) a += 2 * Math.PI;
+                return a;
+            }
+
+            function clamp(val, lo, hi) {
+                return Math.max(lo, Math.min(hi, val));
+            }
+
+            function formatAngle(rad, decimals = 1) {
+                if (state.unit === 'deg') {
+                    return `${(rad * RAD2DEG).toFixed(decimals)}°`;
+                }
+                return `${rad.toFixed(decimals + 2)} rad`;
+            }
+
+            function solveBranch(cx, cy, L1, L2, sign, fallbackTheta1) {
+                const r2 = cx * cx + cy * cy;
+                let cosT2 = (r2 - L1 * L1 - L2 * L2) / (2 * L1 * L2);
+                cosT2 = clamp(cosT2, -1, 1);
+                const sinT2 = sign * Math.sqrt(Math.max(0, 1 - cosT2 * cosT2));
+                const t2 = Math.atan2(sinT2, cosT2);
+
+                const k1 = L1 + L2 * cosT2;
+                const k2 = L2 * sinT2;
+
+                let t1;
+                if (Math.hypot(cx, cy) < 1e-7 && Math.hypot(k1, k2) < 1e-7) {
+                    t1 = fallbackTheta1;
+                } else {
+                    t1 = Math.atan2(cy, cx) - Math.atan2(k2, k1);
+                }
+                return {
+                    theta1: normalizeAngle(t1),
+                    theta2: normalizeAngle(t2),
+                    cosT2,
+                    sinT2
+                };
+            }
+
+            function solveIK(recordTrail = false) {
+                const { L1, L2, targetX, targetY } = state;
+                const r = Math.hypot(targetX, targetY);
+                const rMin = Math.abs(L1 - L2);
+                const rMax = L1 + L2;
+
+                let cx = targetX;
+                let cy = targetY;
+                state.reachable = (r >= rMin - 1e-6 && r <= rMax + 1e-6);
+
+                if (r > rMax) {
+                    cx = targetX * (rMax / r);
+                    cy = targetY * (rMax / r);
+                } else if (r < rMin) {
+                    if (r > 1e-7) {
+                        cx = targetX * (rMin / r);
+                        cy = targetY * (rMin / r);
+                    } else {
+                        cx = rMin * Math.cos(state.theta1);
+                        cy = rMin * Math.sin(state.theta1);
+                    }
+                }
+
+                state.clampedX = cx;
+                state.clampedY = cy;
+
+                const main = solveBranch(cx, cy, L1, L2, state.elbowSign, state.theta1);
+                const alt = solveBranch(cx, cy, L1, L2, -state.elbowSign, state.theta1);
+
+                state.theta1 = main.theta1;
+                state.theta2 = main.theta2;
+                state.altTheta1 = alt.theta1;
+                state.altTheta2 = alt.theta2;
+
+                if (recordTrail) {
+                    pushTrail(cx, cy);
+                }
+                syncUI();
+                draw();
+            }
+
+            function solveFK(recordTrail = false) {
+                const { L1, L2, theta1, theta2 } = state;
+                const x = L1 * Math.cos(theta1) + L2 * Math.cos(theta1 + theta2);
+                const y = L1 * Math.sin(theta1) + L2 * Math.sin(theta1 + theta2);
+
+                state.targetX = x;
+                state.targetY = y;
+                state.clampedX = x;
+                state.clampedY = y;
+                state.reachable = true;
+
+                if (Math.abs(theta2) > 1e-4) {
+                    state.elbowSign = theta2 >= 0 ? 1 : -1;
+                }
+
+                const alt = solveBranch(x, y, L1, L2, -state.elbowSign, theta1);
+                state.altTheta1 = alt.theta1;
+                state.altTheta2 = alt.theta2;
+
+                if (recordTrail) {
+                    pushTrail(x, y);
+                }
+                syncUI();
+                draw();
+            }
+
+            function pushTrail(x, y) {
+                if (!state.showTrail) return;
+                const last = state.trail[state.trail.length - 1];
+                if (!last || Math.hypot(x - last.x, y - last.y) > 0.025) {
+                    state.trail.push({ x, y });
+                    if (state.trail.length > 90) {
+                        state.trail.shift();
+                    }
+                }
+            }
+
+            function updateRangeLimits() {
+                const maxReach = +(state.L1 + state.L2).toFixed(2);
+                const bound = +(maxReach + 0.4).toFixed(2);
+                rngX.min = -bound;
+                rngX.max = bound;
+                rngY.min = -bound;
+                rngY.max = bound;
+
+                if (state.unit === 'deg') {
+                    rngT1.min = -180; rngT1.max = 180; rngT1.step = 0.5; numT1.step = 1;
+                    rngT2.min = -180; rngT2.max = 180; rngT2.step = 0.5; numT2.step = 1;
+                } else {
+                    rngT1.min = -Math.PI.toFixed(3); rngT1.max = Math.PI.toFixed(3); rngT1.step = 0.01; numT1.step = 0.05;
+                    rngT2.min = -Math.PI.toFixed(3); rngT2.max = Math.PI.toFixed(3); rngT2.step = 0.01; numT2.step = 0.05;
+                }
+            }
+
+            function syncUI() {
+                updateRangeLimits();
+
+                const rMin = Math.abs(state.L1 - state.L2);
+                const rMax = state.L1 + state.L2;
+                workspaceBounds.textContent = `REACH: [${rMin.toFixed(2)}, ${rMax.toFixed(2)}]`;
+
+                // Status badges
+                if (state.reachable) {
+                    reachStatus.textContent = 'STATUS: REACHABLE';
+                    reachStatus.classList.remove('out-of-reach');
+                } else {
+                    reachStatus.textContent = 'STATUS: OUT OF REACH (CLAMPED)';
+                    reachStatus.classList.add('out-of-reach');
+                }
+                modeBadge.textContent = `MODE: ${state.mode}`;
+
+                // Active elbow buttons
+                btnElbowDown.classList.toggle('active', state.elbowSign > 0);
+                btnElbowUp.classList.toggle('active', state.elbowSign < 0);
+                btnUnit.textContent = `[ UNIT: ${state.unit.toUpperCase()} ]`;
+                angleUnitLabel.textContent = state.unit.toUpperCase();
+                btnGhost.textContent = `[ ALT SOLUTION: ${state.showGhost ? 'ON' : 'OFF'} ]`;
+                btnGhost.classList.toggle('active', state.showGhost);
+                btnTrail.textContent = `[ TRAIL: ${state.showTrail ? 'ON' : 'OFF'} ]`;
+                btnTrail.classList.toggle('active', state.showTrail);
+
+                // Readouts (show actual achieved end-effector)
+                outX.textContent = state.clampedX.toFixed(2);
+                outY.textContent = state.clampedY.toFixed(2);
+                outT1.textContent = formatAngle(state.theta1, 1);
+                outT2.textContent = formatAngle(state.theta2, 1);
+
+                // Sync inputs without stomping active focused numeric field unless needed
+                if (document.activeElement !== numX) numX.value = state.targetX.toFixed(2);
+                rngX.value = clamp(state.targetX, parseFloat(rngX.min), parseFloat(rngX.max));
+
+                if (document.activeElement !== numY) numY.value = state.targetY.toFixed(2);
+                rngY.value = clamp(state.targetY, parseFloat(rngY.min), parseFloat(rngY.max));
+
+                const t1Disp = state.unit === 'deg' ? state.theta1 * RAD2DEG : state.theta1;
+                const t2Disp = state.unit === 'deg' ? state.theta2 * RAD2DEG : state.theta2;
+                const tDec = state.unit === 'deg' ? 1 : 3;
+
+                if (document.activeElement !== numT1) numT1.value = t1Disp.toFixed(tDec);
+                rngT1.value = t1Disp;
+
+                if (document.activeElement !== numT2) numT2.value = t2Disp.toFixed(tDec);
+                rngT2.value = t2Disp;
+
+                if (document.activeElement !== numL1) numL1.value = state.L1.toFixed(2);
+                rngL1.value = state.L1;
+
+                if (document.activeElement !== numL2) numL2.value = state.L2.toFixed(2);
+                rngL2.value = state.L2;
+
+                // Live equation evaluations
+                const rRaw = Math.hypot(state.targetX, state.targetY);
+                const rUsed = Math.hypot(state.clampedX, state.clampedY);
+                const rawCos = (state.clampedX * state.clampedX + state.clampedY * state.clampedY - state.L1 * state.L1 - state.L2 * state.L2) / (2 * state.L1 * state.L2);
+                const cosT2 = clamp(rawCos, -1, 1);
+                const sinT2 = Math.sin(state.theta2);
+
+                const phi = Math.atan2(state.clampedY, state.clampedX);
+                const psi = Math.atan2(state.L2 * sinT2, state.L1 + state.L2 * cosT2);
+
+                if (state.reachable) {
+                    liveR.textContent = `r = √(${state.targetX.toFixed(2)}² + ${state.targetY.toFixed(2)}²) = ${rRaw.toFixed(3)}  ∈  [${rMin.toFixed(2)}, ${rMax.toFixed(2)}]  (OK)`;
+                    liveR.classList.remove('alert');
+                } else {
+                    liveR.textContent = `r = ${rRaw.toFixed(3)}  ∉  [${rMin.toFixed(2)}, ${rMax.toFixed(2)}]  ⇒  clamped r = ${rUsed.toFixed(3)}`;
+                    liveR.classList.add('alert');
+                }
+
+                const signChar = state.elbowSign > 0 ? '+' : '−';
+                liveT2.textContent = `cos(θ₂) = ${cosT2.toFixed(3)},  sin(θ₂) = ${signChar}${Math.abs(sinT2).toFixed(3)}  ⇒  θ₂ = ${formatAngle(state.theta2, 2)}`;
+
+                liveT1.textContent = `θ₁ = ${formatAngle(phi, 2)} − ${formatAngle(psi, 2)} = ${formatAngle(state.theta1, 2)}`;
+
+                const x1 = state.L1 * Math.cos(state.theta1);
+                const y1 = state.L1 * Math.sin(state.theta1);
+                liveElbow.textContent = `x₁ = ${state.L1.toFixed(2)}·cos(${formatAngle(state.theta1, 1)}) = ${x1.toFixed(3)},   y₁ = ${y1.toFixed(3)}`;
+
+                const fx = x1 + state.L2 * Math.cos(state.theta1 + state.theta2);
+                const fy = y1 + state.L2 * Math.sin(state.theta1 + state.theta2);
+                liveFK.textContent = `x = ${fx.toFixed(3)},   y = ${fy.toFixed(3)}`;
+
+                const detJ = state.L1 * state.L2 * Math.sin(state.theta2);
+                const isSingular = Math.abs(Math.sin(state.theta2)) < 0.03;
+                liveDet.textContent = `det(J) = ${state.L1.toFixed(2)}·${state.L2.toFixed(2)}·sin(${formatAngle(state.theta2, 1)}) = ${detJ.toFixed(3)}  ${isSingular ? '(NEAR SINGULARITY!)' : '(NON-SINGULAR)'}`;
+                liveDet.classList.toggle('alert', isSingular);
+            }
+
+            // Coordinate transform helpers
+            function getViewport() {
+                const rect = canvas.getBoundingClientRect();
+                const w = rect.width;
+                const h = rect.height;
+                const maxReach = state.L1 + state.L2;
+                const worldRadius = Math.max(maxReach * 1.24, 1.5);
+                const scale = Math.min(w, h) / (2 * worldRadius);
+                const cx = w / 2;
+                const cy = h / 2;
+                return { w, h, cx, cy, scale, worldRadius };
+            }
+
+            function worldToScreen(wx, wy, vp) {
+                return {
+                    sx: vp.cx + wx * vp.scale,
+                    sy: vp.cy - wy * vp.scale
+                };
+            }
+
+            function screenToWorld(sx, sy, vp) {
+                return {
+                    wx: (sx - vp.cx) / vp.scale,
+                    wy: (vp.cy - sy) / vp.scale
+                };
+            }
+
+            function drawAngleArc(cx, cy, radius, startWorldAngle, deltaWorldAngle, label) {
+                if (Math.abs(deltaWorldAngle) < 0.03) return;
+                // Canvas angles have +Y downward, so worldAngle -> -worldAngle
+                const startCanvas = -startWorldAngle;
+                const endCanvas = -(startWorldAngle + deltaWorldAngle);
+                const anticlockwise = deltaWorldAngle > 0;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius, startCanvas, endCanvas, anticlockwise);
+                ctx.strokeStyle = 'rgba(216, 177, 64, 0.85)';
+                ctx.lineWidth = 1.6;
+                ctx.setLineDash([4, 3]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                const midWorld = startWorldAngle + deltaWorldAngle / 2;
+                const lx = cx + Math.cos(midWorld) * (radius + 15);
+                const ly = cy - Math.sin(midWorld) * (radius + 15);
+                ctx.font = 'bold 13px "Courier New", monospace';
+                ctx.fillStyle = '#d8b140';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(label, lx, ly);
+                ctx.restore();
+            }
+
+            function drawLink(x0, y0, x1, y1, width, isGhost) {
+                const dx = x1 - x0;
+                const dy = y1 - y0;
+                const len = Math.hypot(dx, dy);
+                if (len < 1) return;
+                const nx = -dy / len;
+                const ny = dx / len;
+                const hw = width / 2;
+
+                ctx.save();
+                if (isGhost) {
+                    ctx.beginPath();
+                    ctx.moveTo(x0, y0);
+                    ctx.lineTo(x1, y1);
+                    ctx.strokeStyle = 'rgba(255, 176, 0, 0.25)';
+                    ctx.lineWidth = 2.5;
+                    ctx.setLineDash([6, 6]);
+                    ctx.stroke();
+                    ctx.restore();
+                    return;
+                }
+
+                // Glowing outer shell
+                ctx.shadowColor = 'rgba(255, 176, 0, 0.75)';
+                ctx.shadowBlur = 10;
+
+                ctx.beginPath();
+                ctx.moveTo(x0 + nx * hw, y0 + ny * hw);
+                ctx.lineTo(x1 + nx * (hw * 0.72), y1 + ny * (hw * 0.72));
+                ctx.lineTo(x1 - nx * (hw * 0.72), y1 - ny * (hw * 0.72));
+                ctx.lineTo(x0 - nx * hw, y0 - ny * hw);
+                ctx.closePath();
+
+                ctx.fillStyle = 'rgba(255, 176, 0, 0.16)';
+                ctx.fill();
+                ctx.strokeStyle = '#ffb000';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Centerline
+                ctx.shadowBlur = 0;
+                ctx.beginPath();
+                ctx.moveTo(x0, y0);
+                ctx.lineTo(x1, y1);
+                ctx.strokeStyle = 'rgba(255, 176, 0, 0.5)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            function draw() {
+                const dpr = window.devicePixelRatio || 1;
+                const rect = canvas.getBoundingClientRect();
+                if (rect.width === 0 || rect.height === 0) return;
+
+                if (canvas.width !== Math.round(rect.width * dpr) || canvas.height !== Math.round(rect.height * dpr)) {
+                    canvas.width = Math.round(rect.width * dpr);
+                    canvas.height = Math.round(rect.height * dpr);
+                }
+
+                ctx.save();
+                ctx.scale(dpr, dpr);
+
+                const vp = getViewport();
+                ctx.clearRect(0, 0, vp.w, vp.h);
+
+                // 1. Grid
+                const gridStep = vp.worldRadius > 3.5 ? 1.0 : 0.5;
+                const maxGrid = Math.ceil(vp.worldRadius / gridStep) * gridStep;
+
+                ctx.lineWidth = 1;
+                for (let g = -maxGrid; g <= maxGrid + 1e-6; g += gridStep) {
+                    const isMajor = Math.abs(g - Math.round(g)) < 1e-6;
+                    const pX = worldToScreen(g, 0, vp);
+                    const pY = worldToScreen(0, g, vp);
+
+                    ctx.strokeStyle = isMajor ? 'rgba(255, 176, 0, 0.16)' : 'rgba(255, 176, 0, 0.07)';
+                    ctx.beginPath();
+                    ctx.moveTo(pX.sx, 0);
+                    ctx.lineTo(pX.sx, vp.h);
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.moveTo(0, pY.sy);
+                    ctx.lineTo(vp.w, pY.sy);
+                    ctx.stroke();
+                }
+
+                // 2. Axes
+                ctx.strokeStyle = 'rgba(255, 176, 0, 0.45)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(0, vp.cy);
+                ctx.lineTo(vp.w, vp.cy);
+                ctx.moveTo(vp.cx, 0);
+                ctx.lineTo(vp.cx, vp.h);
+                ctx.stroke();
+
+                // Axis labels & ticks
+                ctx.font = '12px "Courier New", monospace';
+                ctx.fillStyle = 'rgba(255, 176, 0, 0.7)';
+                ctx.textAlign = 'right';
+                ctx.fillText('+X', vp.w - 8, vp.cy - 6);
+                ctx.textAlign = 'left';
+                ctx.fillText('+Y', vp.cx + 8, 16);
+
+                for (let g = -Math.floor(vp.worldRadius); g <= Math.floor(vp.worldRadius); g++) {
+                    if (g === 0) continue;
+                    const px = worldToScreen(g, 0, vp);
+                    const py = worldToScreen(0, g, vp);
+                    ctx.textAlign = 'center';
+                    ctx.fillText(String(g), px.sx, vp.cy + 14);
+                    ctx.textAlign = 'right';
+                    ctx.fillText(String(g), vp.cx - 6, py.sy + 4);
+                }
+
+                // 3. Reachable workspace envelope
+                const rOuter = (state.L1 + state.L2) * vp.scale;
+                const rInner = Math.abs(state.L1 - state.L2) * vp.scale;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(vp.cx, vp.cy, rOuter, 0, Math.PI * 2);
+                if (rInner > 1) {
+                    ctx.arc(vp.cx, vp.cy, rInner, 0, Math.PI * 2, true);
+                }
+                ctx.fillStyle = 'rgba(255, 176, 0, 0.035)';
+                ctx.fill('evenodd');
+
+                ctx.beginPath();
+                ctx.arc(vp.cx, vp.cy, rOuter, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(255, 176, 0, 0.42)';
+                ctx.lineWidth = 1.2;
+                ctx.setLineDash([6, 5]);
+                ctx.stroke();
+
+                if (rInner > 1) {
+                    ctx.beginPath();
+                    ctx.arc(vp.cx, vp.cy, rInner, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(255, 176, 0, 0.35)';
+                    ctx.stroke();
+                }
+                ctx.restore();
+
+                // 4. End-effector trail
+                if (state.showTrail && state.trail.length > 1) {
+                    ctx.save();
+                    for (let i = 1; i < state.trail.length; i++) {
+                        const a = worldToScreen(state.trail[i - 1].x, state.trail[i - 1].y, vp);
+                        const b = worldToScreen(state.trail[i].x, state.trail[i].y, vp);
+                        const alpha = (i / state.trail.length) * 0.55;
+                        ctx.beginPath();
+                        ctx.moveTo(a.sx, a.sy);
+                        ctx.lineTo(b.sx, b.sy);
+                        ctx.strokeStyle = `rgba(255, 176, 0, ${alpha.toFixed(3)})`;
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                }
+
+                // 5. Ghost (Alternate) IK solution
+                const base = worldToScreen(0, 0, vp);
+                if (state.showGhost && Math.abs(state.theta2) > 0.02) {
+                    const altE = worldToScreen(
+                        state.L1 * Math.cos(state.altTheta1),
+                        state.L1 * Math.sin(state.altTheta1),
+                        vp
+                    );
+                    const altEnd = worldToScreen(state.clampedX, state.clampedY, vp);
+                    drawLink(base.sx, base.sy, altE.sx, altE.sy, 8, true);
+                    drawLink(altE.sx, altE.sy, altEnd.sx, altEnd.sy, 8, true);
+
+                    ctx.beginPath();
+                    ctx.arc(altE.sx, altE.sy, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255, 176, 0, 0.35)';
+                    ctx.fill();
+                }
+
+                // 6. Active Arm Geometry
+                const elbowW = {
+                    x: state.L1 * Math.cos(state.theta1),
+                    y: state.L1 * Math.sin(state.theta1)
+                };
+                const endW = {
+                    x: elbowW.x + state.L2 * Math.cos(state.theta1 + state.theta2),
+                    y: elbowW.y + state.L2 * Math.sin(state.theta1 + state.theta2)
+                };
+
+                const elbow = worldToScreen(elbowW.x, elbowW.y, vp);
+                const end = worldToScreen(endW.x, endW.y, vp);
+
+                // Extension line from link 1 past elbow to visualize theta2 clearly
+                const extLen = Math.min(state.L2 * 0.55, 0.65) * vp.scale;
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(elbow.sx, elbow.sy);
+                ctx.lineTo(
+                    elbow.sx + Math.cos(state.theta1) * extLen,
+                    elbow.sy - Math.sin(state.theta1) * extLen
+                );
+                ctx.strokeStyle = 'rgba(216, 177, 64, 0.45)';
+                ctx.lineWidth = 1.2;
+                ctx.setLineDash([3, 4]);
+                ctx.stroke();
+                ctx.restore();
+
+                // Angle arcs
+                drawAngleArc(base.sx, base.sy, Math.min(34, state.L1 * vp.scale * 0.45), 0, state.theta1, 'θ1');
+                drawAngleArc(elbow.sx, elbow.sy, Math.min(28, state.L2 * vp.scale * 0.45), state.theta1, state.theta2, 'θ2');
+
+                // Links
+                drawLink(base.sx, base.sy, elbow.sx, elbow.sy, 13, false);
+                drawLink(elbow.sx, elbow.sy, end.sx, end.sy, 10, false);
+
+                // Link length labels
+                ctx.save();
+                ctx.font = 'bold 12px "Courier New", monospace';
+                ctx.fillStyle = '#ffb000';
+                ctx.textAlign = 'center';
+                ctx.fillText('L1', (base.sx + elbow.sx) / 2, (base.sy + elbow.sy) / 2 - 10);
+                ctx.fillText('L2', (elbow.sx + end.sx) / 2, (elbow.sy + end.sy) / 2 - 10);
+                ctx.restore();
+
+                // Base mount
+                ctx.save();
+                ctx.fillStyle = '#140b00';
+                ctx.strokeStyle = '#ffb000';
+                ctx.lineWidth = 2;
+                ctx.shadowColor = 'rgba(255, 176, 0, 0.8)';
+                ctx.shadowBlur = 8;
+                ctx.beginPath();
+                ctx.arc(base.sx, base.sy, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(base.sx, base.sy, 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffb000';
+                ctx.fill();
+                ctx.restore();
+
+                // Elbow joint
+                ctx.save();
+                ctx.fillStyle = '#140b00';
+                ctx.strokeStyle = '#ffb000';
+                ctx.lineWidth = 2;
+                ctx.shadowColor = 'rgba(255, 176, 0, 0.8)';
+                ctx.shadowBlur = 8;
+                ctx.beginPath();
+                ctx.arc(elbow.sx, elbow.sy, 6.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+
+                // If target is out of reach, draw requested target in alert red
+                if (!state.reachable) {
+                    const req = worldToScreen(state.targetX, state.targetY, vp);
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(end.sx, end.sy);
+                    ctx.lineTo(req.sx, req.sy);
+                    ctx.strokeStyle = 'rgba(255, 51, 51, 0.75)';
+                    ctx.lineWidth = 1.5;
+                    ctx.setLineDash([4, 4]);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    ctx.strokeStyle = '#ff3333';
+                    ctx.shadowColor = 'rgba(255, 51, 51, 0.8)';
+                    ctx.shadowBlur = 8;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(req.sx - 7, req.sy - 7);
+                    ctx.lineTo(req.sx + 7, req.sy + 7);
+                    ctx.moveTo(req.sx + 7, req.sy - 7);
+                    ctx.lineTo(req.sx - 7, req.sy + 7);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                // End-effector draggable reticle
+                ctx.save();
+                ctx.shadowColor = 'rgba(255, 176, 0, 0.95)';
+                ctx.shadowBlur = 12;
+                ctx.strokeStyle = '#ffb000';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(end.sx, end.sy, 11, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.fillStyle = '#ffb000';
+                ctx.beginPath();
+                ctx.arc(end.sx, end.sy, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Reticle ticks
+                const tick = 16;
+                ctx.lineWidth = 1.4;
+                ctx.beginPath();
+                ctx.moveTo(end.sx - tick, end.sy); ctx.lineTo(end.sx - 11, end.sy);
+                ctx.moveTo(end.sx + 11, end.sy); ctx.lineTo(end.sx + tick, end.sy);
+                ctx.moveTo(end.sx, end.sy - tick); ctx.lineTo(end.sx, end.sy - 11);
+                ctx.moveTo(end.sx, end.sy + 11); ctx.lineTo(end.sx, end.sy + tick);
+                ctx.stroke();
+
+                // Coordinate tag next to end-effector
+                ctx.shadowBlur = 4;
+                ctx.font = 'bold 12px "Courier New", monospace';
+                ctx.fillStyle = '#ffb000';
+                ctx.textAlign = 'left';
+                ctx.fillText(`(${endW.x.toFixed(2)}, ${endW.y.toFixed(2)})`, end.sx + 16, end.sy - 12);
+                ctx.restore();
+
+                ctx.restore();
+            }
+
+            // Pointer interaction on canvas
+            function updateTargetFromPointer(e) {
+                const rect = canvas.getBoundingClientRect();
+                const sx = e.clientX - rect.left;
+                const sy = e.clientY - rect.top;
+                const vp = getViewport();
+                const { wx, wy } = screenToWorld(sx, sy, vp);
+
+                state.mode = 'IK';
+                state.targetX = wx;
+                state.targetY = wy;
+                solveIK(true);
+            }
+
+            canvas.addEventListener('pointerdown', (e) => {
+                canvas.setPointerCapture(e.pointerId);
+                state.dragging = true;
+                canvas.classList.add('dragging');
+                updateTargetFromPointer(e);
+            });
+
+            canvas.addEventListener('pointermove', (e) => {
+                if (!state.dragging) return;
+                updateTargetFromPointer(e);
+            });
+
+            function stopDragging(e) {
+                if (!state.dragging) return;
+                state.dragging = false;
+                canvas.classList.remove('dragging');
+                if (canvas.hasPointerCapture(e.pointerId)) {
+                    canvas.releasePointerCapture(e.pointerId);
+                }
+            }
+
+            canvas.addEventListener('pointerup', stopDragging);
+            canvas.addEventListener('pointercancel', stopDragging);
+
+            // Control listeners: X, Y -> IK
+            function onXYInput(axis, rawVal) {
+                const v = parseFloat(rawVal);
+                if (Number.isNaN(v)) return;
+                state.mode = 'IK';
+                if (axis === 'x') state.targetX = v;
+                else state.targetY = v;
+                solveIK(true);
+            }
+
+            rngX.addEventListener('input', () => onXYInput('x', rngX.value));
+            numX.addEventListener('input', () => onXYInput('x', numX.value));
+            rngY.addEventListener('input', () => onXYInput('y', rngY.value));
+            numY.addEventListener('input', () => onXYInput('y', numY.value));
+
+            // Control listeners: theta1, theta2 -> FK
+            function onThetaInput(joint, rawVal) {
+                const v = parseFloat(rawVal);
+                if (Number.isNaN(v)) return;
+                state.mode = 'FK';
+                const rad = state.unit === 'deg' ? v * DEG2RAD : v;
+                if (joint === 1) state.theta1 = normalizeAngle(rad);
+                else state.theta2 = normalizeAngle(rad);
+                solveFK(true);
+            }
+
+            rngT1.addEventListener('input', () => onThetaInput(1, rngT1.value));
+            numT1.addEventListener('input', () => onThetaInput(1, numT1.value));
+            rngT2.addEventListener('input', () => onThetaInput(2, rngT2.value));
+            numT2.addEventListener('input', () => onThetaInput(2, numT2.value));
+
+            // Control listeners: L1, L2
+            function onLinkInput(link, rawVal) {
+                const v = parseFloat(rawVal);
+                if (Number.isNaN(v) || v < 0.1) return;
+                if (link === 1) state.L1 = clamp(v, 0.2, 3.0);
+                else state.L2 = clamp(v, 0.2, 3.0);
+                state.trail = [];
+                if (state.mode === 'FK') solveFK(false);
+                else solveIK(false);
+            }
+
+            rngL1.addEventListener('input', () => onLinkInput(1, rngL1.value));
+            numL1.addEventListener('input', () => onLinkInput(1, numL1.value));
+            rngL2.addEventListener('input', () => onLinkInput(2, rngL2.value));
+            numL2.addEventListener('input', () => onLinkInput(2, numL2.value));
+
+            // Toolbar buttons
+            btnElbowDown.addEventListener('click', () => {
+                state.elbowSign = 1;
+                state.mode = 'IK';
+                solveIK(false);
+            });
+
+            btnElbowUp.addEventListener('click', () => {
+                state.elbowSign = -1;
+                state.mode = 'IK';
+                solveIK(false);
+            });
+
+            btnUnit.addEventListener('click', () => {
+                state.unit = state.unit === 'deg' ? 'rad' : 'deg';
+                syncUI();
+            });
+
+            btnGhost.addEventListener('click', () => {
+                state.showGhost = !state.showGhost;
+                syncUI();
+                draw();
+            });
+
+            btnTrail.addEventListener('click', () => {
+                state.showTrail = !state.showTrail;
+                if (!state.showTrail) state.trail = [];
+                syncUI();
+                draw();
+            });
+
+            btnReset.addEventListener('click', () => {
+                state.L1 = 1.50;
+                state.L2 = 1.20;
+                state.targetX = 1.40;
+                state.targetY = 1.10;
+                state.elbowSign = 1;
+                state.mode = 'IK';
+                state.trail = [];
+                solveIK(false);
+            });
+
+            window.addEventListener('resize', draw);
+
+            // Initial solve & render
+            solveIK(false);
+        })();
+    </script>
+</body>
+
+</html>
