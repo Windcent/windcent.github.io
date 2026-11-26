@@ -269,17 +269,60 @@
             cursor: grabbing;
         }
 
-        canvas#arm-canvas.add-wp-cursor {
-            cursor: cell;
+        canvas#arm-canvas.hover-wp {
+            cursor: grab;
         }
 
         .scope-wrap {
             position: relative;
             width: 100%;
-            height: 210px;
-            border: 1px solid rgba(255, 176, 0, 0.45);
-            background: rgba(8, 4, 0, 0.92);
+            height: 390px;
+            background: transparent;
             overflow: hidden;
+        }
+
+        .var-legend {
+            border-top: 1px dashed rgba(255, 176, 0, 0.45);
+            padding-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .var-legend-title {
+            font-size: 0.9em;
+            color: var(--highlight-color);
+            text-shadow: var(--highlight-glow);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .var-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px 14px;
+        }
+
+        .var-item {
+            font-family: var(--math-font);
+            font-size: clamp(11.5px, 0.88vw, 13.5px);
+            line-height: 1.35;
+            color: var(--highlight-color);
+            background: rgba(0, 0, 0, 0.28);
+            border-left: 2px solid rgba(255, 176, 0, 0.55);
+            padding: 4px 8px;
+        }
+
+        .var-item .vsym {
+            color: var(--terminal-color);
+            font-weight: 700;
+            margin-right: 6px;
+        }
+
+        @media (max-width: 760px) {
+            .var-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         canvas#scope-canvas {
@@ -435,7 +478,7 @@
 
         .wp-row {
             display: grid;
-            grid-template-columns: 44px 1fr auto;
+            grid-template-columns: 56px 1fr;
             align-items: center;
             gap: 8px;
             padding: 6px 10px;
@@ -449,7 +492,24 @@
         }
 
         .wp-row.active-seg {
-            background: rgba(255, 176, 0, 0.16);
+            background: rgba(255, 176, 0, 0.22);
+            border-left: 3px solid var(--terminal-color);
+            box-shadow: inset 0 0 10px rgba(255, 176, 0, 0.22);
+        }
+
+        .wp-row.active-seg .wp-coords {
+            color: var(--terminal-color);
+            font-weight: bold;
+        }
+
+        .wp-badge {
+            font-size: 0.85em;
+            color: #000;
+            background: var(--terminal-color);
+            padding: 0 5px;
+            margin-left: 6px;
+            text-shadow: none;
+            font-weight: bold;
         }
 
         .wp-id {
@@ -482,8 +542,8 @@
         /* Filter method pills & properties */
         .method-grid {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 7px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
         }
 
         .method-grid .retro-btn {
@@ -640,6 +700,18 @@
             color: var(--highlight-color);
         }
 
+        .ylink {
+            color: var(--terminal-color);
+            text-decoration: underline;
+        }
+
+        .ylink:hover {
+            background-color: var(--terminal-color);
+            color: #000;
+            text-shadow: none;
+            text-decoration: none;
+        }
+
         footer {
             width: 94%;
             max-width: 1260px;
@@ -647,8 +719,25 @@
             border-top: 2px solid var(--terminal-color);
             color: var(--terminal-color);
             text-align: center;
-            padding: 1.2rem 0 0.5rem 0;
+            padding: 1.2rem 0 0.8rem 0;
             font-size: 0.9em;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .footer-docs {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 6px 14px;
+            font-size: 0.92em;
+            color: var(--highlight-color);
+        }
+
+        footer p {
+            margin: 0;
         }
 
         @media (max-width: 960px) {
@@ -697,15 +786,13 @@
                     </div>
 
                     <div class="canvas-hint">
-                        <span>DRAG ARM TO SET (x, y) &bull; SHIFT+CLICK TO DROP WAYPOINT</span>
+                        <span>DRAG ARM OR WAYPOINTS &bull; SHIFT+CLICK TO DROP WAYPOINT</span>
                         <span id="workspace-bounds">REACH: [0.30, 2.70]</span>
                     </div>
 
                     <div class="toolbar">
-                        <button id="btn-elbow-down" class="retro-btn active" type="button">[ ELBOW DOWN (+) ]</button>
-                        <button id="btn-elbow-up" class="retro-btn" type="button">[ ELBOW UP (-) ]</button>
+                        <button id="btn-elbow" class="retro-btn" type="button">[ ALT SOLUTION: OFF ]</button>
                         <button id="btn-unit" class="retro-btn" type="button">[ UNIT: DEG ]</button>
-                        <button id="btn-ghost" class="retro-btn active" type="button">[ ALT SOL: ON ]</button>
                         <button id="btn-trail" class="retro-btn active" type="button">[ TRAIL: ON ]</button>
                         <button id="btn-reset" class="retro-btn" type="button">[ RESET ]</button>
                     </div>
@@ -793,27 +880,20 @@
                 </div>
             </section>
 
-            <!-- Waypoint Programming & Motion Filtering Panel -->
+            <!-- Waypoint Programming & Target Increment Limiter Panel -->
             <section class="panel">
                 <div class="panel-header">
-                    <h2>[ Waypoint Programmer &amp; Motion Filtering ]</h2>
+                    <h2>[ Waypoint Programmer &amp; Target Increment Limiter ]</h2>
                     <span id="playback-status" class="status-badge">SEQ: STOPPED (4 WAYPOINTS)</span>
                 </div>
 
-                <div class="two-col-grid">
-                    <!-- Left: Waypoint Sequencer -->
+                <div style="display:flex; flex-direction:column; gap:14px;">
+                    <!-- Waypoint Sequencer -->
                     <div style="display:flex; flex-direction:column; gap:10px;">
                         <div class="toolbar">
                             <button id="btn-play" class="retro-btn" type="button">[ &#9654; PLAY ]</button>
                             <button id="btn-stop" class="retro-btn" type="button">[ &#9632; STOP ]</button>
-                            <button id="btn-loop" class="retro-btn active" type="button">[ LOOP: ON ]</button>
-                            <button id="btn-space" class="retro-btn" type="button">[ SPACE: TASK (x,y) ]</button>
-                        </div>
-
-                        <div class="toolbar">
-                            <button id="btn-add-cur" class="retro-btn sm" type="button">[ + ADD CURRENT ]</button>
-                            <button id="btn-click-add" class="retro-btn sm" type="button">[ CLICK-TO-ADD: OFF ]</button>
-                            <button id="btn-clear-wp" class="retro-btn sm danger" type="button">[ CLEAR ]</button>
+                            <button id="btn-clear-wp" class="retro-btn danger" type="button">[ CLEAR ]</button>
                         </div>
 
                         <div class="toolbar">
@@ -823,215 +903,162 @@
                             <button id="btn-preset-pick" class="retro-btn sm" type="button">[ PICK &amp; PLACE ]</button>
                         </div>
 
-                        <div class="control-group">
-                            <div class="control-group-title">
-                                <span>Segment Timing</span>
-                                <span>T (sec / segment)</span>
-                            </div>
-                            <div class="control-row">
-                                <label class="control-label" for="num-seg-t">T (s)</label>
-                                <input id="rng-seg-t" type="range" min="0.4" max="4.0" step="0.1" value="1.5">
-                                <input id="num-seg-t" type="number" min="0.2" max="10.0" step="0.1" value="1.5">
-                            </div>
-                        </div>
-
                         <div id="wp-list" class="wp-list" aria-label="Programmed waypoints"></div>
                     </div>
 
-                    <!-- Right: Motion Filter Method Selector + Parameters + Live Scope -->
+                    <!-- Max Increment Parameter + Live Position Scopes -->
                     <div style="display:flex; flex-direction:column; gap:10px;">
-                        <div class="control-group-title" style="border-bottom:1px solid rgba(255,176,0,0.4);">
-                            <span>Select Motion Filtering / Trajectory Method</span>
-                            <span id="active-method-tag">QUINTIC S-CURVE</span>
-                        </div>
-
-                        <div class="method-grid">
-                            <button class="retro-btn method-btn" data-method="linear" type="button">1. LINEAR (RAW)</button>
-                            <button class="retro-btn method-btn" data-method="lpf1" type="button">2. 1ST-ORDER LPF</button>
-                            <button class="retro-btn method-btn" data-method="lpf2" type="button">3. 2ND-ORDER SPRING</button>
-                            <button class="retro-btn method-btn" data-method="trapezoid" type="button">4. TRAPEZOIDAL</button>
-                            <button class="retro-btn method-btn active" data-method="quintic" type="button">5. QUINTIC S-CURVE</button>
-                            <button class="retro-btn method-btn" data-method="fir" type="button">6. MOVING AVG (FIR)</button>
-                        </div>
-
-                        <!-- Dynamic Filter Parameters -->
-                        <div id="filter-params-box" class="control-group">
+                        <div class="control-group">
                             <div class="control-group-title">
-                                <span>Filter Parameters</span>
-                                <span id="filter-param-hint">NONE (ANALYTICAL)</span>
+                                <span>Target Coordinate Increment</span>
+                                <span>MAX STEP PER TICK (&Delta;<sub>max</sub>)</span>
                             </div>
-                            <div id="param-tau-row" class="control-row" style="display:none;">
-                                <label class="control-label" for="num-tau"><span class="math-sym">&tau;</span> (s)</label>
-                                <input id="rng-tau" type="range" min="0.02" max="1.00" step="0.01" value="0.18">
-                                <input id="num-tau" type="number" min="0.01" max="2.00" step="0.02" value="0.18">
-                            </div>
-                            <div id="param-wn-row" class="control-row" style="display:none;">
-                                <label class="control-label" for="num-wn"><span class="math-sym">&omega;<sub>n</sub></span> (r/s)</label>
-                                <input id="rng-wn" type="range" min="2.0" max="25.0" step="0.5" value="9.0">
-                                <input id="num-wn" type="number" min="1.0" max="40.0" step="0.5" value="9.0">
-                            </div>
-                            <div id="param-zeta-row" class="control-row" style="display:none;">
-                                <label class="control-label" for="num-zeta"><span class="math-sym">&zeta;</span> (damp)</label>
-                                <input id="rng-zeta" type="range" min="0.20" max="2.00" step="0.05" value="0.85">
-                                <input id="num-zeta" type="number" min="0.10" max="3.00" step="0.05" value="0.85">
-                            </div>
-                            <div id="param-blend-row" class="control-row" style="display:none;">
-                                <label class="control-label" for="num-blend">b = t<sub>a</sub>/T</label>
-                                <input id="rng-blend" type="range" min="0.05" max="0.50" step="0.01" value="0.25">
-                                <input id="num-blend" type="number" min="0.05" max="0.50" step="0.02" value="0.25">
-                            </div>
-                            <div id="param-fir-row" class="control-row" style="display:none;">
-                                <label class="control-label" for="num-fir">N (taps)</label>
-                                <input id="rng-fir" type="range" min="3" max="80" step="1" value="24">
-                                <input id="num-fir" type="number" min="2" max="120" step="1" value="24">
-                            </div>
-                            <div id="param-none-msg" style="font-size:0.86em; color:var(--dim-color);">
-                                Uses segment duration T directly with zero velocity &amp; acceleration boundary conditions.
+                            <div class="control-row">
+                                <label class="control-label" for="num-inc"><span class="math-sym">&Delta;<sub>max</sub></span></label>
+                                <input id="rng-inc" type="range" min="0.001" max="0.050" step="0.001" value="0.010">
+                                <input id="num-inc" type="number" min="0.001" max="0.200" step="0.001" value="0.010">
                             </div>
                         </div>
 
                         <!-- Live Telemetry Oscilloscope -->
                         <div class="scope-wrap">
-                            <canvas id="scope-canvas" aria-label="Live velocity and acceleration oscilloscope"></canvas>
+                            <canvas id="scope-canvas" aria-label="Live speed commands, position, and joint angles oscilloscope"></canvas>
                         </div>
                         <div class="scope-legend">
-                            <span>&#9473;&#9473; SPEED &#8214;v&#8214; (SOLID)</span>
-                            <span>- - - ACCEL &#8214;a&#8214; (DASHED)</span>
-                            <span id="scope-peaks">PEAK |v|=0.00 |a|=0.00</span>
+                            <span style="color:#ffb000;">&#9473;&#9473; vx / x / theta1 (AMBER)</span>
+                            <span style="color:#ffe08a;">&#9473;&#9473; vy / y / theta2 (LIGHT AMBER)</span>
+                            <span id="scope-peaks">ERR |e|=0.000 | MAX=0.000</span>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Motion Filter Method Explorer & Live Numerical Solution -->
+            <!-- Unified Solving Pipeline: Input -> Output -->
             <section class="panel">
                 <div class="panel-header">
-                    <h2>[ Motion Filter Equations &amp; Live Numerical Solution ]</h2>
-                    <span id="method-eq-badge" class="status-badge">METHOD: QUINTIC S-CURVE</span>
+                    <h2>[ Solving Pipeline: Equations &amp; Live Numerical Solution (Input &rarr; Output) ]</h2>
+                    <span id="rate-status-badge" class="status-badge">STATE: READY</span>
                 </div>
 
-                <p id="method-desc" class="method-desc"></p>
-
-                <div id="method-props" class="prop-strip"></div>
-
-                <div class="equations-grid">
-                    <div class="eq-column">
-                        <h3>Symbolic Formulation</h3>
+                <!-- Stage 1: Remote Speed Command Integration -->
+                <div class="eq-column">
+                    <h3>Stage 1 &mdash; Remote Speed Command Integration (ux, uy -&gt; x, y)</h3>
+                    <div class="equations-grid">
                         <div class="eq-card">
-                            <div id="mf-eq1-title" class="eq-title">Position / Filter Law</div>
-                            <div id="mf-eq1-formula" class="eq-formula"></div>
+                            <div class="eq-title">1. Remote Speed Command</div>
+                            <div class="eq-formula">
+                                <span>v_max = delta_max / dt;</span>
+                            </div>
+                            <div class="eq-formula">
+                                <span>vx = ux * v_max;&nbsp;&nbsp;vy = uy * v_max;</span>
+                            </div>
                             <div id="mf-eq1-live" class="eq-live"></div>
                         </div>
+
                         <div class="eq-card">
-                            <div id="mf-eq2-title" class="eq-title">Velocity &amp; Acceleration</div>
-                            <div id="mf-eq2-formula" class="eq-formula"></div>
+                            <div class="eq-title">2. Target Coordinate Integration</div>
+                            <div class="eq-formula">
+                                <span>x = x + vx * dt;&nbsp;&nbsp;y = y + vy * dt;</span>
+                            </div>
                             <div id="mf-eq2-live" class="eq-live"></div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="eq-column">
-                        <h3>Live Numerical Telemetry</h3>
+                <!-- Stage 2: Inverse Kinematics -->
+                <div class="eq-column">
+                    <h3>Stage 2 &mdash; Inverse Kinematics (x, y -&gt; theta2, theta1)</h3>
+                    <div class="equations-grid">
                         <div class="eq-card">
-                            <div class="eq-title">Reference vs Filtered State</div>
-                            <div id="mf-state-formula" class="eq-formula"></div>
-                            <div id="mf-state-live" class="eq-live"></div>
-                        </div>
-                        <div class="eq-card">
-                            <div class="eq-title">Tracking Error &amp; Kinematic Derivatives</div>
+                            <div class="eq-title">3. Elbow Angle theta2 (Law of Cosines)</div>
                             <div class="eq-formula">
-                                <span>e = &#8214;q<sub>ref</sub> &minus; q<sub>f</sub>&#8214;,&nbsp;&nbsp;v = &#8214;dq<sub>f</sub>/dt&#8214;,&nbsp;&nbsp;a = &#8214;d&sup2;q<sub>f</sub>/dt&sup2;&#8214;</span>
+                                <span>cos_t2 = (x*x + y*y - L1*L1 - L2*L2) / (2.0 * L1 * L2);</span>
                             </div>
-                            <div id="mf-err-live" class="eq-live"></div>
+                            <div class="eq-formula">
+                                <span>sin_t2 = elbow_sign * sqrt(1.0 - cos_t2*cos_t2);</span>
+                            </div>
+                            <div class="eq-formula">
+                                <span>theta2 = atan2(sin_t2, cos_t2);</span>
+                            </div>
+                            <div id="live-t2" class="eq-live">cos_t2 = 0.000, sin_t2 = 0.000 =&gt; theta2 = 0.00 deg</div>
+                        </div>
+
+                        <div class="eq-card">
+                            <div class="eq-title">4. Shoulder Angle theta1</div>
+                            <div class="eq-formula">
+                                <span>theta1 = atan2(y, x) - atan2(L2 * sin(theta2), L1 + L2 * cos(theta2));</span>
+                            </div>
+                            <div id="live-t1" class="eq-live">theta1 = 0.00 - 0.00 = 0.00 deg</div>
                         </div>
                     </div>
                 </div>
-            </section>
 
-            <!-- Kinematics Equations Panel -->
-            <section class="panel">
-                <div class="panel-header">
-                    <h2>[ Analytical Kinematics Equations &amp; Live Evaluation ]</h2>
-                    <span style="font-size: 0.85em; color: var(--highlight-color);">REAL-TIME SYMBOLIC + NUMERIC</span>
-                </div>
-
-                <div class="equations-grid">
-                    <!-- Inverse Kinematics Column -->
-                    <div class="eq-column">
-                        <h3>Inverse Kinematics (x, y &rarr; &theta;<sub>1</sub>, &theta;<sub>2</sub>)</h3>
-
+                <!-- Stage 3: Forward Kinematics & Output Verification -->
+                <div class="eq-column">
+                    <h3>Stage 3 &mdash; Forward Kinematics &amp; Output Verification (theta1, theta2 -&gt; Arm Pose)</h3>
+                    <div class="equations-grid">
                         <div class="eq-card">
-                            <div class="eq-title">1. Radial Distance &amp; Workspace Check</div>
+                            <div class="eq-title">5. Elbow Joint Position (x1, y1)</div>
                             <div class="eq-formula">
-                                <span>r = </span>
-                                <span class="sqrt">&radic;<span class="sqrt-rad">x&sup2; + y&sup2;</span></span>
-                                <span>,&nbsp;&nbsp;|L<sub>1</sub> &minus; L<sub>2</sub>| &le; r &le; L<sub>1</sub> + L<sub>2</sub></span>
+                                <span>x1 = L1 * cos(theta1);&nbsp;&nbsp;y1 = L1 * sin(theta1);</span>
                             </div>
-                            <div id="live-r" class="eq-live">r = 0.000</div>
+                            <div id="live-elbow" class="eq-live">x1 = 0.000, y1 = 0.000</div>
                         </div>
 
                         <div class="eq-card">
-                            <div class="eq-title">2. Elbow Angle &theta;<sub>2</sub> (Law of Cosines)</div>
+                            <div class="eq-title">6. End-Effector Output Position (x, y) &amp; Jacobian</div>
                             <div class="eq-formula">
-                                <span>cos(&theta;<sub>2</sub>) = </span>
-                                <span class="frac">
-                                    <span class="num">x&sup2; + y&sup2; &minus; L<sub>1</sub>&sup2; &minus; L<sub>2</sub>&sup2;</span>
-                                    <span class="den">2 &middot; L<sub>1</sub> &middot; L<sub>2</sub></span>
-                                </span>
+                                <span>x = L1 * cos(theta1) + L2 * cos(theta1 + theta2);</span>
                             </div>
                             <div class="eq-formula">
-                                <span>&theta;<sub>2</sub> = atan2(&plusmn;</span>
-                                <span class="sqrt">&radic;<span class="sqrt-rad">1 &minus; cos&sup2;(&theta;<sub>2</sub>)</span></span>
-                                <span>, cos(&theta;<sub>2</sub>))</span>
+                                <span>y = L1 * sin(theta1) + L2 * sin(theta1 + theta2);</span>
                             </div>
-                            <div id="live-t2" class="eq-live">cos(&theta;2) = 0.000 &rArr; &theta;2 = 0.00&deg;</div>
-                        </div>
-
-                        <div class="eq-card">
-                            <div class="eq-title">3. Shoulder Angle &theta;<sub>1</sub></div>
                             <div class="eq-formula">
-                                <span>&theta;<sub>1</sub> = atan2(y, x) &minus; atan2(L<sub>2</sub> sin(&theta;<sub>2</sub>), L<sub>1</sub> + L<sub>2</sub> cos(&theta;<sub>2</sub>))</span>
+                                <span>det_J = L1 * L2 * sin(theta2);</span>
                             </div>
-                            <div id="live-t1" class="eq-live">&theta;1 = 0.00&deg; &minus; 0.00&deg; = 0.00&deg;</div>
+                            <div id="live-fk" class="eq-live">x = 0.000, y = 0.000</div>
+                            <div id="live-det" class="eq-live">det_J = 0.000 (NON-SINGULAR)</div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Forward Kinematics Column -->
-                    <div class="eq-column">
-                        <h3>Forward Kinematics (&theta;<sub>1</sub>, &theta;<sub>2</sub> &rarr; x, y)</h3>
-
-                        <div class="eq-card">
-                            <div class="eq-title">1. Elbow Joint Position (x<sub>1</sub>, y<sub>1</sub>)</div>
-                            <div class="eq-formula">
-                                <span>x<sub>1</sub> = L<sub>1</sub> cos(&theta;<sub>1</sub>),&nbsp;&nbsp;y<sub>1</sub> = L<sub>1</sub> sin(&theta;<sub>1</sub>)</span>
-                            </div>
-                            <div id="live-elbow" class="eq-live">(x1, y1) = (0.000, 0.000)</div>
-                        </div>
-
-                        <div class="eq-card">
-                            <div class="eq-title">2. End-Effector Position (x, y)</div>
-                            <div class="eq-formula">
-                                <span>x = L<sub>1</sub> cos(&theta;<sub>1</sub>) + L<sub>2</sub> cos(&theta;<sub>1</sub> + &theta;<sub>2</sub>)</span>
-                            </div>
-                            <div class="eq-formula">
-                                <span>y = L<sub>1</sub> sin(&theta;<sub>1</sub>) + L<sub>2</sub> sin(&theta;<sub>1</sub> + &theta;<sub>2</sub>)</span>
-                            </div>
-                            <div id="live-fk" class="eq-live">(x, y) = (0.000, 0.000)</div>
-                        </div>
-
-                        <div class="eq-card">
-                            <div class="eq-title">3. Manipulator Jacobian Determinant</div>
-                            <div class="eq-formula">
-                                <span>det(J) = L<sub>1</sub> &middot; L<sub>2</sub> &middot; sin(&theta;<sub>2</sub>)</span>
-                            </div>
-                            <div id="live-det" class="eq-live">det(J) = 0.000 (NON-SINGULAR)</div>
-                        </div>
+                <!-- Unified Variable Definitions (Input -> Output) -->
+                <div class="var-legend">
+                    <div class="var-legend-title">Variable Definitions (C &lt;math.h&gt;, Input -&gt; Output)</div>
+                    <div class="var-grid">
+                        <div class="var-item"><span class="vsym">ux, uy</span>Normalized remote-control speed command inputs in [-1.0, +1.0].</div>
+                        <div class="var-item"><span class="vsym">delta_max, dt, v_max</span>Max step per tick, fixed timestep (1.0/120.0 s), and max speed (delta_max / dt).</div>
+                        <div class="var-item"><span class="vsym">vx, vy</span>Commanded end-effector axis speeds (ux * v_max, uy * v_max).</div>
+                        <div class="var-item"><span class="vsym">x, y</span>Integrated end-effector Cartesian coordinates relative to base origin (0, 0).</div>
+                        <div class="var-item"><span class="vsym">L1, L2</span>Physical lengths of Link 1 (shoulder-to-elbow) and Link 2 (elbow-to-tip).</div>
+                        <div class="var-item"><span class="vsym">elbow_sign</span>Branch selector: -1.0 for Elbow Up, +1.0 for Elbow Down.</div>
+                        <div class="var-item"><span class="vsym">cos_t2, sin_t2</span>Cosine and sine of theta2 from Law of Cosines (clamp cos_t2 to [-1.0, 1.0] before sqrt).</div>
+                        <div class="var-item"><span class="vsym">theta2</span>Elbow joint angle relative to Link 1 in radians (atan2(sin_t2, cos_t2)).</div>
+                        <div class="var-item"><span class="vsym">theta1</span>Shoulder joint angle measured counter-clockwise from the +X axis in radians.</div>
+                        <div class="var-item"><span class="vsym">atan2(y, x)</span>C &lt;math.h&gt; four-quadrant arctangent returning angle in (-M_PI, M_PI].</div>
+                        <div class="var-item"><span class="vsym">x1, y1</span>Computed elbow joint Cartesian coordinates at the end of Link 1.</div>
+                        <div class="var-item"><span class="vsym">det_J</span>Jacobian determinant (L1 * L2 * sin(theta2)); near 0 at singularities.</div>
                     </div>
                 </div>
             </section>
         </main>
 
         <footer>
-            <p>&copy; 2025 Vincent St-Pierre &bull; 2-DOF Inverse Kinematics &amp; Motion Filtering Lab</p>
+            <div class="footer-docs">
+                <span>DOCS &amp; REFERENCES:</span>
+                <a class="ylink" href="https://en.cppreference.com/w/c/numeric/math" target="_blank" rel="noopener noreferrer">C &lt;math.h&gt; Reference</a>
+                <span>&bull;</span>
+                <a class="ylink" href="https://en.cppreference.com/w/c/numeric/math/atan2" target="_blank" rel="noopener noreferrer">C atan2()</a>
+                <span>&bull;</span>
+                <a class="ylink" href="https://en.wikipedia.org/wiki/Inverse_kinematics" target="_blank" rel="noopener noreferrer">Inverse Kinematics</a>
+                <span>&bull;</span>
+                <a class="ylink" href="https://en.wikipedia.org/wiki/Law_of_cosines" target="_blank" rel="noopener noreferrer">Law of Cosines</a>
+                <span>&bull;</span>
+                <a class="ylink" href="https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant" target="_blank" rel="noopener noreferrer">Jacobian &amp; Singularities</a>
+                <span>&bull;</span>
+                <a class="ylink" href="https://hades.mech.northwestern.edu/index.php/Modern_Robotics" target="_blank" rel="noopener noreferrer">Modern Robotics (Lynch &amp; Park)</a>
+            </div>
+            <p>&copy; 2025 Vincent St-Pierre &bull; 2-DOF Inverse Kinematics Lab</p>
         </footer>
     </div>
 
@@ -1040,99 +1067,8 @@
             const RAD2DEG = 180 / Math.PI;
             const DEG2RAD = Math.PI / 180;
             const FIXED_DT = 1 / 120;
-
-            const METHOD_META = {
-                linear: {
-                    name: 'LINEAR (RAW)',
-                    desc: 'Direct piecewise-linear interpolation between waypoints. Produces sharp corners with constant segment speed and impulsive acceleration spikes at every waypoint.',
-                    props: [
-                        ['Continuity', 'C⁰ (pos only)'],
-                        ['Corner Blend', 'None (exact)'],
-                        ['Overshoot', '0%'],
-                        ['Tracking Lag', 'None']
-                    ],
-                    eq1Title: '1. Linear Segment Interpolation',
-                    eq1Html: '<span>q(u) = q<sub>0</sub> + u &middot; (q<sub>1</sub> &minus; q<sub>0</sub>),&nbsp;&nbsp;u = </span><span class="frac"><span class="num">t</span><span class="den">T</span></span><span> &isin; [0, 1]</span>',
-                    eq2Title: '2. Velocity &amp; Acceleration',
-                    eq2Html: '<span>q&#775;(t) = </span><span class="frac"><span class="num">q<sub>1</sub> &minus; q<sub>0</sub></span><span class="den">T</span></span><span>,&nbsp;&nbsp;q&#776;(t) = 0 (impulses at u = 0, 1)</span>',
-                    paramHint: 'NONE (SEGMENT DURATION T)'
-                },
-                lpf1: {
-                    name: '1ST-ORDER LPF',
-                    desc: 'Exponential moving-average low-pass filter on the linear waypoint reference. Rounds sharp corners naturally with zero overshoot, at the cost of phase lag proportional to time constant τ.',
-                    props: [
-                        ['Continuity', 'C¹ (smooth vel)'],
-                        ['Corner Blend', 'Exponential'],
-                        ['Overshoot', '0%'],
-                        ['Tracking Lag', 'High (~τ)']
-                    ],
-                    eq1Title: '1. Discrete 1st-Order Low-Pass Filter',
-                    eq1Html: '<span>q<sub>f</sub>[k] = q<sub>f</sub>[k&minus;1] + &alpha;(q<sub>ref</sub>[k] &minus; q<sub>f</sub>[k&minus;1]),&nbsp;&nbsp;&alpha; = </span><span class="frac"><span class="num">&Delta;t</span><span class="den">&tau; + &Delta;t</span></span>',
-                    eq2Title: '2. Continuous Equivalent ODE',
-                    eq2Html: '<span>&tau; &middot; q&#775;<sub>f</sub>(t) + q<sub>f</sub>(t) = q<sub>ref</sub>(t)&nbsp;&rArr;&nbsp;q&#775;<sub>f</sub> = </span><span class="frac"><span class="num">q<sub>ref</sub> &minus; q<sub>f</sub></span><span class="den">&tau;</span></span>',
-                    paramHint: 'TIME CONSTANT τ'
-                },
-                lpf2: {
-                    name: '2ND-ORDER SPRING',
-                    desc: 'Second-order mass-spring-damper filter driven by the reference trajectory. Guarantees C² smooth acceleration; tune ζ = 1.0 for critically damped response or ζ < 1.0 to observe underdamped corner overshoot.',
-                    props: [
-                        ['Continuity', 'C² (smooth acc)'],
-                        ['Corner Blend', 'Dynamic'],
-                        ['Overshoot', 'If ζ < 1.0'],
-                        ['Tracking Lag', 'Medium (~2ζ/ωₙ)']
-                    ],
-                    eq1Title: '1. 2nd-Order Differential Equation',
-                    eq1Html: '<span>q&#776;<sub>f</sub> + 2&zeta;&omega;<sub>n</sub> q&#775;<sub>f</sub> + &omega;<sub>n</sub>&sup2; q<sub>f</sub> = &omega;<sub>n</sub>&sup2; q<sub>ref</sub></span>',
-                    eq2Title: '2. Symplectic Euler Numerical Step',
-                    eq2Html: '<span>q&#775;<sub>f</sub>[k] = q&#775;<sub>f</sub>[k&minus;1] + q&#776;<sub>f</sub>&Delta;t,&nbsp;&nbsp;q<sub>f</sub>[k] = q<sub>f</sub>[k&minus;1] + q&#775;<sub>f</sub>[k]&Delta;t</span>',
-                    paramHint: 'NATURAL FREQ ωₙ & DAMPING ζ'
-                },
-                trapezoid: {
-                    name: 'TRAPEZOIDAL (LSPB)',
-                    desc: 'Linear Segment with Parabolic Blends (trapezoidal velocity profile). Accelerates smoothly for fraction b = tₐ/T, cruises at constant velocity, and decelerates cleanly to stop at each waypoint.',
-                    props: [
-                        ['Continuity', 'C¹ (bounded acc)'],
-                        ['Corner Blend', 'Stop-at-WP'],
-                        ['Overshoot', '0%'],
-                        ['Tracking Lag', 'None (exact T)']
-                    ],
-                    eq1Title: '1. Normalized Profile s(u) with Blend b = tₐ/T',
-                    eq1Html: '<span>a<sub>n</sub> = </span><span class="frac"><span class="num">1</span><span class="den">b(1&minus;b)</span></span><span>,&nbsp;&nbsp;v<sub>n</sub> = </span><span class="frac"><span class="num">1</span><span class="den">1&minus;b</span></span><span>,&nbsp;&nbsp;q(u) = q<sub>0</sub> + s(u)&Delta;q</span>',
-                    eq2Title: '2. Piecewise Velocity &amp; Acceleration',
-                    eq2Html: '<span>s&prime;(u) &isin; {a<sub>n</sub>u, v<sub>n</sub>, a<sub>n</sub>(1&minus;u)},&nbsp;&nbsp;q&#775; = </span><span class="frac"><span class="num">s&prime;</span><span class="den">T</span></span><span>&Delta;q,&nbsp;&nbsp;q&#776; = </span><span class="frac"><span class="num">s&Prime;</span><span class="den">T&sup2;</span></span><span>&Delta;q</span>',
-                    paramHint: 'ACCEL BLEND FRACTION b'
-                },
-                quintic: {
-                    name: 'QUINTIC S-CURVE',
-                    desc: '5th-order minimum-jerk polynomial trajectory. Enforces zero velocity and zero acceleration at every waypoint, producing ultra-smooth S-curve motion ideal for precision robotics.',
-                    props: [
-                        ['Continuity', 'C² (min-jerk)'],
-                        ['Corner Blend', 'Stop-at-WP'],
-                        ['Overshoot', '0%'],
-                        ['Tracking Lag', 'None (exact T)']
-                    ],
-                    eq1Title: '1. Minimum-Jerk Quintic Polynomial',
-                    eq1Html: '<span>s(u) = 10u&sup3; &minus; 15u<sup>4</sup> + 6u<sup>5</sup>,&nbsp;&nbsp;q(u) = q<sub>0</sub> + s(u)(q<sub>1</sub> &minus; q<sub>0</sub>)</span>',
-                    eq2Title: '2. Velocity &amp; Acceleration Derivatives',
-                    eq2Html: '<span>s&prime;(u) = 30u&sup2;&minus;60u&sup3;+30u<sup>4</sup>,&nbsp;&nbsp;s&Prime;(u) = 60u&minus;180u&sup2;+120u&sup3;</span>',
-                    paramHint: 'NONE (ZERO VEL/ACC BOUNDARIES)'
-                },
-                fir: {
-                    name: 'MOVING AVG (FIR)',
-                    desc: 'Finite Impulse Response boxcar filter averaging the last N reference samples. Produces symmetric, linear-phase corner rounding with guaranteed stability and zero overshoot.',
-                    props: [
-                        ['Continuity', 'C¹ (smooth vel)'],
-                        ['Corner Blend', 'Symmetric FIR'],
-                        ['Overshoot', '0%'],
-                        ['Tracking Lag', 'Exact (N-1)Δt/2']
-                    ],
-                    eq1Title: '1. N-Tap Moving Average Filter',
-                    eq1Html: '<span>q<sub>f</sub>[k] = </span><span class="frac"><span class="num">1</span><span class="den">N</span></span><span> &Sigma;<sub>i=0..N&minus;1</sub> q<sub>ref</sub>[k &minus; i],&nbsp;&nbsp;T<sub>w</sub> = N&Delta;t</span>',
-                    eq2Title: '2. Finite-Difference Derivatives',
-                    eq2Html: '<span>q&#775;[k] = </span><span class="frac"><span class="num">q<sub>f</sub>[k] &minus; q<sub>f</sub>[k&minus;1]</span><span class="den">&Delta;t</span></span><span>,&nbsp;&nbsp;q&#776;[k] = </span><span class="frac"><span class="num">q&#775;[k] &minus; q&#775;[k&minus;1]</span><span class="den">&Delta;t</span></span>',
-                    paramHint: 'WINDOW LENGTH N (SAMPLES AT 120 Hz)'
-                }
-            };
+            const ARRIVAL_EPS = 0.005; // rad (~0.29 deg)
+            const SCOPE_SAMPLES = 960; // 8.0 s window at 120 Hz
 
             const state = {
                 L1: 1.50,
@@ -1143,11 +1079,8 @@
                 clampedY: 1.10,
                 theta1: 0,
                 theta2: 0,
-                altTheta1: 0,
-                altTheta2: 0,
-                elbowSign: 1,
+                elbowSign: -1,
                 unit: 'deg',
-                showGhost: true,
                 showTrail: true,
                 reachable: true,
                 mode: 'IK',
@@ -1164,36 +1097,25 @@
                 ],
                 playing: false,
                 loop: true,
-                clickToAdd: false,
-                space: 'task', // 'task' or 'joint'
-                method: 'quintic',
-                segDuration: 1.5,
-                segIndex: 0,
-                segTime: 0,
-                // Filter parameters
-                tau: 0.18,
-                wn: 9.0,
-                zeta: 0.85,
-                blend: 0.25,
-                firN: 24,
-                // Live filter state (in active space coordinates: [a, b])
-                qRef: [1.40, 1.10],
-                qFilt: [1.40, 1.10],
-                qVel: [0, 0],
-                qAcc: [0, 0],
-                refCartesian: [1.40, 1.10],
-                firBuf: [],
-                // Live diagnostics for equations
-                lastU: 0,
-                lastS: 0,
-                lastS1: 0,
-                lastS2: 0,
-                lastPhase: 'IDLE',
-                // Scope ring buffer
-                scopeVel: [],
-                scopeAcc: [],
-                peakVel: 0,
-                peakAcc: 0,
+                targetWpIdx: 0,
+                activeWpIdx: 0,
+                draggingWpIdx: -1,
+                hoverWpIdx: -1,
+                // Max coordinate increment per tick (units / tick)
+                maxIncrement: 0.010,
+                // Target setpoint vs actual Cartesian state
+                spPos: [0.75, 1.55],
+                actPos: [0.75, 1.55],
+                lastStep: [0, 0],
+                clampedStep: false,
+                // Scope ring buffers (speed commands, position, joint angles)
+                scopeVx: [],
+                scopeVy: [],
+                scopeX: [],
+                scopeY: [],
+                scopeT1: [],
+                scopeT2: [],
+                peakErr: 0,
                 accum: 0,
                 lastFrameTime: 0
             };
@@ -1227,71 +1149,34 @@
             const rngL2 = document.getElementById('rng-l2');
             const numL2 = document.getElementById('num-l2');
 
-            const btnElbowDown = document.getElementById('btn-elbow-down');
-            const btnElbowUp = document.getElementById('btn-elbow-up');
+            const btnElbow = document.getElementById('btn-elbow');
             const btnUnit = document.getElementById('btn-unit');
-            const btnGhost = document.getElementById('btn-ghost');
             const btnTrail = document.getElementById('btn-trail');
             const btnReset = document.getElementById('btn-reset');
 
             // Kinematics Equation DOM
-            const liveR = document.getElementById('live-r');
             const liveT2 = document.getElementById('live-t2');
             const liveT1 = document.getElementById('live-t1');
             const liveElbow = document.getElementById('live-elbow');
             const liveFK = document.getElementById('live-fk');
             const liveDet = document.getElementById('live-det');
 
-            // Waypoint & Motion Filter DOM
+            // Waypoint & Rate Limiter DOM
             const playbackStatus = document.getElementById('playback-status');
+            const rateStatusBadge = document.getElementById('rate-status-badge');
             const btnPlay = document.getElementById('btn-play');
             const btnStop = document.getElementById('btn-stop');
-            const btnLoop = document.getElementById('btn-loop');
-            const btnSpace = document.getElementById('btn-space');
-            const btnAddCur = document.getElementById('btn-add-cur');
-            const btnClickAdd = document.getElementById('btn-click-add');
             const btnClearWp = document.getElementById('btn-clear-wp');
             const btnPresetSquare = document.getElementById('btn-preset-square');
             const btnPresetTri = document.getElementById('btn-preset-tri');
             const btnPresetPick = document.getElementById('btn-preset-pick');
-            const rngSegT = document.getElementById('rng-seg-t');
-            const numSegT = document.getElementById('num-seg-t');
             const wpListEl = document.getElementById('wp-list');
 
-            const methodBtns = document.querySelectorAll('.method-btn');
-            const activeMethodTag = document.getElementById('active-method-tag');
-            const methodEqBadge = document.getElementById('method-eq-badge');
-            const methodDesc = document.getElementById('method-desc');
-            const methodProps = document.getElementById('method-props');
-            const filterParamHint = document.getElementById('filter-param-hint');
+            const rngInc = document.getElementById('rng-inc');
+            const numInc = document.getElementById('num-inc');
 
-            const paramTauRow = document.getElementById('param-tau-row');
-            const paramWnRow = document.getElementById('param-wn-row');
-            const paramZetaRow = document.getElementById('param-zeta-row');
-            const paramBlendRow = document.getElementById('param-blend-row');
-            const paramFirRow = document.getElementById('param-fir-row');
-            const paramNoneMsg = document.getElementById('param-none-msg');
-
-            const rngTau = document.getElementById('rng-tau');
-            const numTau = document.getElementById('num-tau');
-            const rngWn = document.getElementById('rng-wn');
-            const numWn = document.getElementById('num-wn');
-            const rngZeta = document.getElementById('rng-zeta');
-            const numZeta = document.getElementById('num-zeta');
-            const rngBlend = document.getElementById('rng-blend');
-            const numBlend = document.getElementById('num-blend');
-            const rngFir = document.getElementById('rng-fir');
-            const numFir = document.getElementById('num-fir');
-
-            const mfEq1Title = document.getElementById('mf-eq1-title');
-            const mfEq1Formula = document.getElementById('mf-eq1-formula');
             const mfEq1Live = document.getElementById('mf-eq1-live');
-            const mfEq2Title = document.getElementById('mf-eq2-title');
-            const mfEq2Formula = document.getElementById('mf-eq2-formula');
             const mfEq2Live = document.getElementById('mf-eq2-live');
-            const mfStateFormula = document.getElementById('mf-state-formula');
-            const mfStateLive = document.getElementById('mf-state-live');
-            const mfErrLive = document.getElementById('mf-err-live');
             const scopePeaks = document.getElementById('scope-peaks');
 
             function normalizeAngle(rad) {
@@ -1384,12 +1269,9 @@
                 state.clampedY = cy;
 
                 const main = solveBranch(cx, cy, L1, L2, state.elbowSign, state.theta1);
-                const alt = solveBranch(cx, cy, L1, L2, -state.elbowSign, state.theta1);
 
                 state.theta1 = main.theta1;
                 state.theta2 = main.theta2;
-                state.altTheta1 = alt.theta1;
-                state.altTheta2 = alt.theta2;
 
                 if (recordTrail) pushTrail(cx, cy);
                 syncUI();
@@ -1410,10 +1292,6 @@
                     state.elbowSign = theta2 >= 0 ? 1 : -1;
                 }
 
-                const alt = solveBranch(x, y, L1, L2, -state.elbowSign, theta1);
-                state.altTheta1 = alt.theta1;
-                state.altTheta2 = alt.theta2;
-
                 if (recordTrail) pushTrail(x, y);
                 syncUI();
                 draw();
@@ -1428,59 +1306,25 @@
                 }
             }
 
-            // ================= WAYPOINT & MOTION FILTER ENGINE =================
+            // ================= WAYPOINT & TARGET INCREMENT ENGINE =================
 
-            function resetFilterStateAtWaypoint(wpIdx = 0) {
+            function resetMotionAtWaypoint(wpIdx = 0) {
                 if (motion.waypoints.length === 0) return;
-                const wp = motion.waypoints[clamp(wpIdx, 0, motion.waypoints.length - 1)];
-                const q0 = motion.space === 'task' ? [wp.x, wp.y] : wpToJoint(wp);
-                motion.qRef = [...q0];
-                motion.qFilt = [...q0];
-                motion.qVel = [0, 0];
-                motion.qAcc = [0, 0];
-                motion.refCartesian = [wp.x, wp.y];
-                motion.firBuf = [];
-                for (let i = 0; i < motion.firN; i++) {
-                    motion.firBuf.push([...q0]);
-                }
-                motion.lastU = 0;
-                motion.lastS = 0;
-                motion.lastS1 = 0;
-                motion.lastS2 = 0;
-                motion.lastPhase = 'READY';
-                motion.scopeVel = [];
-                motion.scopeAcc = [];
-                motion.peakVel = 0;
-                motion.peakAcc = 0;
-            }
-
-            function getSegmentEndpoints(segIdx) {
-                const n = motion.waypoints.length;
-                const wpA = motion.waypoints[segIdx % n];
-                const wpB = motion.waypoints[(segIdx + 1) % n];
-                if (motion.space === 'task') {
-                    const q0 = [wpA.x, wpA.y];
-                    const q1 = [wpB.x, wpB.y];
-                    return { q0, q1, dq: [q1[0] - q0[0], q1[1] - q0[1]] };
-                } else {
-                    const q0 = wpToJoint(wpA);
-                    const q1 = wpToJoint(wpB);
-                    const dq = [shortestAngleDiff(q0[0], q1[0]), shortestAngleDiff(q0[1], q1[1])];
-                    return { q0, q1: [q0[0] + dq[0], q0[1] + dq[1]], dq };
-                }
-            }
-
-            function evalTrapezoid(u, b) {
-                const an = 1 / (b * (1 - b));
-                const vn = 1 / (1 - b);
-                if (u < b) {
-                    return { s: 0.5 * an * u * u, s1: an * u, s2: an, phase: 'ACCEL' };
-                } else if (u <= 1 - b) {
-                    return { s: 0.5 * an * b * b + vn * (u - b), s1: vn, s2: 0, phase: 'CRUISE' };
-                } else {
-                    const w = 1 - u;
-                    return { s: 1 - 0.5 * an * w * w, s1: an * w, s2: -an, phase: 'DECEL' };
-                }
+                const idx = clamp(wpIdx, 0, motion.waypoints.length - 1);
+                const wp = motion.waypoints[idx];
+                motion.targetWpIdx = idx;
+                motion.activeWpIdx = idx;
+                motion.spPos = [wp.x, wp.y];
+                motion.actPos = [wp.x, wp.y];
+                motion.lastStep = [0, 0];
+                motion.clampedStep = false;
+                motion.scopeVx = [];
+                motion.scopeVy = [];
+                motion.scopeX = [];
+                motion.scopeY = [];
+                motion.scopeT1 = [];
+                motion.scopeT2 = [];
+                motion.peakErr = 0;
             }
 
             function stepMotion(dt) {
@@ -1490,175 +1334,78 @@
                     return;
                 }
 
-                const maxSeg = motion.loop ? n : n - 1;
-                const T = Math.max(0.1, motion.segDuration);
-                motion.segTime += dt;
+                const targetWp = motion.waypoints[motion.targetWpIdx % n];
+                motion.spPos = [targetWp.x, targetWp.y];
 
-                while (motion.segTime >= T) {
-                    motion.segTime -= T;
-                    motion.segIndex += 1;
-                    if (motion.segIndex >= maxSeg) {
+                const maxInc = motion.maxIncrement;
+                const errX = targetWp.x - motion.actPos[0];
+                const errY = targetWp.y - motion.actPos[1];
+                const dist = Math.hypot(errX, errY);
+                let dx = errX;
+                let dy = errY;
+                if (dist > maxInc) {
+                    const scale = maxInc / dist;
+                    dx = errX * scale;
+                    dy = errY * scale;
+                }
+
+                motion.clampedStep = dist > maxInc + 1e-6;
+                motion.lastStep = [dx, dy];
+                motion.actPos = [motion.actPos[0] + dx, motion.actPos[1] + dy];
+
+                // Solve IK directly for incremented target coordinates
+                state.mode = 'SEQ-IK';
+                state.targetX = motion.actPos[0];
+                state.targetY = motion.actPos[1];
+                const r = Math.hypot(state.targetX, state.targetY);
+                const rMin = Math.abs(state.L1 - state.L2);
+                const rMax = state.L1 + state.L2;
+                let cx = state.targetX, cy = state.targetY;
+                state.reachable = (r >= rMin - 1e-6 && r <= rMax + 1e-6);
+                if (r > rMax) { cx *= rMax / r; cy *= rMax / r; }
+                else if (r < rMin && r > 1e-7) { cx *= rMin / r; cy *= rMin / r; }
+                state.clampedX = cx;
+                state.clampedY = cy;
+                const main = solveBranch(cx, cy, state.L1, state.L2, state.elbowSign, state.theta1);
+                state.theta1 = main.theta1;
+                state.theta2 = main.theta2;
+                pushTrail(cx, cy);
+
+                // Record scope telemetry (speed commands, position, joint angles)
+                motion.scopeVx.push(dx / dt);
+                motion.scopeVy.push(dy / dt);
+                motion.scopeX.push(cx);
+                motion.scopeY.push(cy);
+                motion.scopeT1.push(state.theta1);
+                motion.scopeT2.push(state.theta2);
+                if (motion.scopeVx.length > SCOPE_SAMPLES) {
+                    motion.scopeVx.shift();
+                    motion.scopeVy.shift();
+                    motion.scopeX.shift();
+                    motion.scopeY.shift();
+                    motion.scopeT1.shift();
+                    motion.scopeT2.shift();
+                }
+
+                const remX = targetWp.x - motion.actPos[0];
+                const remY = targetWp.y - motion.actPos[1];
+                motion.peakErr = Math.max(motion.peakErr, Math.hypot(remX, remY));
+
+                // Advance to next waypoint setpoint once arrived
+                if (Math.abs(remX) <= 0.002 && Math.abs(remY) <= 0.002) {
+                    const nextIdx = motion.targetWpIdx + 1;
+                    if (nextIdx >= n) {
                         if (motion.loop) {
-                            motion.segIndex = 0;
+                            motion.targetWpIdx = 0;
                         } else {
-                            motion.segIndex = maxSeg - 1;
-                            motion.segTime = T;
                             motion.playing = false;
-                            break;
+                            motion.lastStep = [0, 0];
+                            motion.clampedStep = false;
                         }
+                    } else {
+                        motion.targetWpIdx = nextIdx;
                     }
                 }
-
-                const u = clamp(motion.segTime / T, 0, 1);
-                const { q0, dq } = getSegmentEndpoints(motion.segIndex);
-
-                // Linear reference along polyline
-                const qRef = [q0[0] + u * dq[0], q0[1] + u * dq[1]];
-                motion.qRef = qRef;
-                motion.lastU = u;
-
-                if (motion.space === 'task') {
-                    motion.refCartesian = [qRef[0], qRef[1]];
-                } else {
-                    motion.refCartesian = fkFromAngles(qRef[0], qRef[1]);
-                }
-
-                const prevQ = [...motion.qFilt];
-                const prevV = [...motion.qVel];
-
-                if (motion.method === 'linear') {
-                    motion.lastS = u;
-                    motion.lastS1 = 1;
-                    motion.lastS2 = 0;
-                    motion.lastPhase = 'LINEAR';
-                    motion.qFilt = [...qRef];
-                    motion.qVel = [dq[0] / T, dq[1] / T];
-                    motion.qAcc = [
-                        (motion.qVel[0] - prevV[0]) / dt,
-                        (motion.qVel[1] - prevV[1]) / dt
-                    ];
-                } else if (motion.method === 'trapezoid') {
-                    const tr = evalTrapezoid(u, motion.blend);
-                    motion.lastS = tr.s;
-                    motion.lastS1 = tr.s1;
-                    motion.lastS2 = tr.s2;
-                    motion.lastPhase = tr.phase;
-                    motion.qFilt = [q0[0] + tr.s * dq[0], q0[1] + tr.s * dq[1]];
-                    motion.qVel = [(tr.s1 / T) * dq[0], (tr.s1 / T) * dq[1]];
-                    motion.qAcc = [(tr.s2 / (T * T)) * dq[0], (tr.s2 / (T * T)) * dq[1]];
-                } else if (motion.method === 'quintic') {
-                    const u2 = u * u, u3 = u2 * u, u4 = u3 * u, u5 = u4 * u;
-                    const s = 10 * u3 - 15 * u4 + 6 * u5;
-                    const s1 = 30 * u2 - 60 * u3 + 30 * u4;
-                    const s2 = 60 * u - 180 * u2 + 120 * u3;
-                    motion.lastS = s;
-                    motion.lastS1 = s1;
-                    motion.lastS2 = s2;
-                    motion.lastPhase = u < 0.5 ? 'S-ACCEL' : 'S-DECEL';
-                    motion.qFilt = [q0[0] + s * dq[0], q0[1] + s * dq[1]];
-                    motion.qVel = [(s1 / T) * dq[0], (s1 / T) * dq[1]];
-                    motion.qAcc = [(s2 / (T * T)) * dq[0], (s2 / (T * T)) * dq[1]];
-                } else if (motion.method === 'lpf1') {
-                    const alpha = dt / (motion.tau + dt);
-                    const err0 = motion.space === 'joint' ? shortestAngleDiff(prevQ[0], qRef[0]) : (qRef[0] - prevQ[0]);
-                    const err1 = motion.space === 'joint' ? shortestAngleDiff(prevQ[1], qRef[1]) : (qRef[1] - prevQ[1]);
-                    const nextQ = [prevQ[0] + alpha * err0, prevQ[1] + alpha * err1];
-                    const nextV = [(nextQ[0] - prevQ[0]) / dt, (nextQ[1] - prevQ[1]) / dt];
-                    const nextA = [(nextV[0] - prevV[0]) / dt, (nextV[1] - prevV[1]) / dt];
-                    motion.qFilt = motion.space === 'joint' ? [normalizeAngle(nextQ[0]), normalizeAngle(nextQ[1])] : nextQ;
-                    motion.qVel = nextV;
-                    motion.qAcc = nextA;
-                    motion.lastPhase = 'FILTERING';
-                } else if (motion.method === 'lpf2') {
-                    const wn = motion.wn;
-                    const z = motion.zeta;
-                    const err0 = motion.space === 'joint' ? shortestAngleDiff(prevQ[0], qRef[0]) : (qRef[0] - prevQ[0]);
-                    const err1 = motion.space === 'joint' ? shortestAngleDiff(prevQ[1], qRef[1]) : (qRef[1] - prevQ[1]);
-                    const a0 = wn * wn * err0 - 2 * z * wn * prevV[0];
-                    const a1 = wn * wn * err1 - 2 * z * wn * prevV[1];
-                    const v0 = prevV[0] + a0 * dt;
-                    const v1 = prevV[1] + a1 * dt;
-                    const nextQ = [prevQ[0] + v0 * dt, prevQ[1] + v1 * dt];
-                    motion.qAcc = [a0, a1];
-                    motion.qVel = [v0, v1];
-                    motion.qFilt = motion.space === 'joint' ? [normalizeAngle(nextQ[0]), normalizeAngle(nextQ[1])] : nextQ;
-                    motion.lastPhase = z < 0.99 ? 'UNDERDAMPED' : (z > 1.01 ? 'OVERDAMPED' : 'CRITICAL');
-                } else if (motion.method === 'fir') {
-                    const N = Math.max(2, Math.round(motion.firN));
-                    // Keep continuous unwrapped reference in buffer for joint space
-                    let sample = [...qRef];
-                    if (motion.space === 'joint' && motion.firBuf.length > 0) {
-                        const last = motion.firBuf[motion.firBuf.length - 1];
-                        sample = [
-                            last[0] + shortestAngleDiff(last[0], qRef[0]),
-                            last[1] + shortestAngleDiff(last[1], qRef[1])
-                        ];
-                    }
-                    motion.firBuf.push(sample);
-                    while (motion.firBuf.length > N) motion.firBuf.shift();
-                    let s0 = 0, s1 = 0;
-                    for (let i = 0; i < motion.firBuf.length; i++) {
-                        s0 += motion.firBuf[i][0];
-                        s1 += motion.firBuf[i][1];
-                    }
-                    const avg0 = s0 / motion.firBuf.length;
-                    const avg1 = s1 / motion.firBuf.length;
-                    const d0 = motion.space === 'joint' ? shortestAngleDiff(prevQ[0], avg0) : (avg0 - prevQ[0]);
-                    const d1 = motion.space === 'joint' ? shortestAngleDiff(prevQ[1], avg1) : (avg1 - prevQ[1]);
-                    const nextV = [d0 / dt, d1 / dt];
-                    const nextA = [(nextV[0] - prevV[0]) / dt, (nextV[1] - prevV[1]) / dt];
-                    motion.qFilt = motion.space === 'joint' ? [normalizeAngle(avg0), normalizeAngle(avg1)] : [avg0, avg1];
-                    motion.qVel = nextV;
-                    motion.qAcc = nextA;
-                    motion.lastPhase = `FIR-${N}`;
-                }
-
-                // Apply filtered state to arm
-                if (motion.space === 'task') {
-                    state.mode = 'SEQ-IK';
-                    state.targetX = motion.qFilt[0];
-                    state.targetY = motion.qFilt[1];
-                    const r = Math.hypot(state.targetX, state.targetY);
-                    const rMin = Math.abs(state.L1 - state.L2);
-                    const rMax = state.L1 + state.L2;
-                    let cx = state.targetX, cy = state.targetY;
-                    state.reachable = (r >= rMin - 1e-6 && r <= rMax + 1e-6);
-                    if (r > rMax) { cx *= rMax / r; cy *= rMax / r; }
-                    else if (r < rMin && r > 1e-7) { cx *= rMin / r; cy *= rMin / r; }
-                    state.clampedX = cx;
-                    state.clampedY = cy;
-                    const main = solveBranch(cx, cy, state.L1, state.L2, state.elbowSign, state.theta1);
-                    const alt = solveBranch(cx, cy, state.L1, state.L2, -state.elbowSign, state.theta1);
-                    state.theta1 = main.theta1;
-                    state.theta2 = main.theta2;
-                    state.altTheta1 = alt.theta1;
-                    state.altTheta2 = alt.theta2;
-                    pushTrail(cx, cy);
-                } else {
-                    state.mode = 'SEQ-FK';
-                    state.theta1 = normalizeAngle(motion.qFilt[0]);
-                    state.theta2 = normalizeAngle(motion.qFilt[1]);
-                    const [x, y] = fkFromAngles(state.theta1, state.theta2);
-                    state.targetX = x;
-                    state.targetY = y;
-                    state.clampedX = x;
-                    state.clampedY = y;
-                    state.reachable = true;
-                    const alt = solveBranch(x, y, state.L1, state.L2, -state.elbowSign, state.theta1);
-                    state.altTheta1 = alt.theta1;
-                    state.altTheta2 = alt.theta2;
-                    pushTrail(x, y);
-                }
-
-                // Record scope telemetry (clamp huge impulse spikes for linear display clarity)
-                const vMag = Math.hypot(motion.qVel[0], motion.qVel[1]);
-                const aMag = Math.min(Math.hypot(motion.qAcc[0], motion.qAcc[1]), 60);
-                motion.scopeVel.push(vMag);
-                motion.scopeAcc.push(aMag);
-                if (motion.scopeVel.length > 240) motion.scopeVel.shift();
-                if (motion.scopeAcc.length > 240) motion.scopeAcc.shift();
-                motion.peakVel = Math.max(motion.peakVel, vMag);
-                motion.peakAcc = Math.max(motion.peakAcc, aMag);
             }
 
             function animLoop(now) {
@@ -1669,6 +1416,8 @@
                 if (motion.playing) {
                     motion.accum += frameDt;
                     let stepped = false;
+                    const prevTarget = motion.targetWpIdx;
+                    const prevPlaying = motion.playing;
                     while (motion.accum >= FIXED_DT) {
                         stepMotion(FIXED_DT);
                         motion.accum -= FIXED_DT;
@@ -1679,6 +1428,10 @@
                         }
                     }
                     if (stepped) {
+                        motion.activeWpIdx = motion.targetWpIdx;
+                        if (motion.targetWpIdx !== prevTarget || motion.playing !== prevPlaying) {
+                            renderWaypointList();
+                        }
                         syncUI();
                         draw();
                         drawScope();
@@ -1694,112 +1447,48 @@
                     wpListEl.innerHTML = '<div class="wp-empty">NO WAYPOINTS &mdash; SHIFT+CLICK CANVAS OR USE A PRESET</div>';
                     return;
                 }
+                const activeIdx = motion.playing
+                    ? motion.targetWpIdx % motion.waypoints.length
+                    : (motion.draggingWpIdx >= 0 ? motion.draggingWpIdx : motion.activeWpIdx);
+
                 wpListEl.innerHTML = motion.waypoints.map((wp, idx) => {
-                    const isActive = motion.playing && (idx === motion.segIndex % motion.waypoints.length);
+                    const isActive = idx === activeIdx;
+                    const badge = isActive
+                        ? `<span class="wp-badge">${motion.playing ? 'TARGET' : (motion.draggingWpIdx === idx ? 'DRAG' : 'ACTIVE')}</span>`
+                        : '';
                     return `
                         <div class="wp-row ${isActive ? 'active-seg' : ''}">
-                            <span class="wp-id">W${idx}</span>
+                            <span class="wp-id">${isActive ? '&#9654; ' : ''}W${idx}</span>
                             <span class="wp-coords" data-jump="${idx}" title="Click to jump arm here">
-                                (${wp.x.toFixed(2)}, ${wp.y.toFixed(2)})
-                            </span>
-                            <span class="wp-actions">
-                                <button class="retro-btn sm danger" data-del="${idx}" type="button">X</button>
+                                (${wp.x.toFixed(2)}, ${wp.y.toFixed(2)})${badge}
                             </span>
                         </div>
                     `;
                 }).join('');
             }
 
-            function renderMethodStaticInfo() {
-                const meta = METHOD_META[motion.method];
-                activeMethodTag.textContent = meta.name;
-                methodEqBadge.textContent = `METHOD: ${meta.name}`;
-                methodDesc.textContent = meta.desc;
-                filterParamHint.textContent = meta.paramHint;
-
-                methodProps.innerHTML = meta.props.map(([k, v]) => `
-                    <div class="prop-item">
-                        <span class="pk">${k}</span>
-                        <span class="pv">${v}</span>
-                    </div>
-                `).join('');
-
-                mfEq1Title.innerHTML = meta.eq1Title;
-                mfEq1Formula.innerHTML = meta.eq1Html;
-                mfEq2Title.innerHTML = meta.eq2Title;
-                mfEq2Formula.innerHTML = meta.eq2Html;
-
-                // Show/hide relevant parameter rows
-                paramTauRow.style.display = motion.method === 'lpf1' ? 'grid' : 'none';
-                paramWnRow.style.display = motion.method === 'lpf2' ? 'grid' : 'none';
-                paramZetaRow.style.display = motion.method === 'lpf2' ? 'grid' : 'none';
-                paramBlendRow.style.display = motion.method === 'trapezoid' ? 'grid' : 'none';
-                paramFirRow.style.display = motion.method === 'fir' ? 'grid' : 'none';
-                paramNoneMsg.style.display = (motion.method === 'linear' || motion.method === 'quintic') ? 'block' : 'none';
-                if (motion.method === 'linear') {
-                    paramNoneMsg.textContent = 'Unfiltered baseline: moves at constant speed (q1 − q0) / T with sharp corners.';
-                } else if (motion.method === 'quintic') {
-                    paramNoneMsg.textContent = 'Uses segment duration T directly with zero velocity & acceleration boundary conditions.';
-                }
-
-                methodBtns.forEach(b => b.classList.toggle('active', b.dataset.method === motion.method));
-            }
-
             function updateMotionEquationsLive() {
-                const T = motion.segDuration;
-                const u = motion.lastU;
-                const qR = motion.qRef;
-                const qF = motion.qFilt;
-                const v = motion.qVel;
-                const a = motion.qAcc;
-                const isJoint = motion.space === 'joint';
+                const maxInc = motion.maxIncrement;
+                const vMax = maxInc / FIXED_DT;
+                const vx = motion.lastStep[0] / FIXED_DT;
+                const vy = motion.lastStep[1] / FIXED_DT;
+                const ux = vMax > 1e-9 ? clamp(vx / vMax, -1, 1) : 0;
+                const uy = vMax > 1e-9 ? clamp(vy / vMax, -1, 1) : 0;
 
-                const fmtPair = (arr) => isJoint
-                    ? `(${formatAngle(arr[0], 1)}, ${formatAngle(arr[1], 1)})`
-                    : `(${arr[0].toFixed(3)}, ${arr[1].toFixed(3)})`;
+                const ex = motion.spPos[0] - motion.actPos[0];
+                const ey = motion.spPos[1] - motion.actPos[1];
+                const errMag = Math.hypot(ex, ey);
 
-                const errVec = isJoint
-                    ? [shortestAngleDiff(qF[0], qR[0]), shortestAngleDiff(qF[1], qR[1])]
-                    : [qR[0] - qF[0], qR[1] - qF[1]];
-                const errMag = Math.hypot(errVec[0], errVec[1]);
-                const vMag = Math.hypot(v[0], v[1]);
-                const aMag = Math.hypot(a[0], a[1]);
-                const unitStr = isJoint ? 'rad' : 'u';
+                mfEq1Live.textContent = `ux = ${ux.toFixed(2)}, uy = ${uy.toFixed(2)}, v_max = ${vMax.toFixed(2)} => vx = ${vx.toFixed(2)}, vy = ${vy.toFixed(2)}`;
+                mfEq2Live.textContent = `vx*dt = ${motion.lastStep[0].toFixed(4)}, vy*dt = ${motion.lastStep[1].toFixed(4)} => x = ${state.targetX.toFixed(2)}, y = ${state.targetY.toFixed(2)}`;
+                mfEq2Live.classList.toggle('alert', motion.clampedStep);
 
-                if (motion.method === 'linear') {
-                    mfEq1Live.textContent = `u = ${motion.segTime.toFixed(2)} / ${T.toFixed(2)} = ${u.toFixed(3)}   ⇒   s(u) = ${u.toFixed(3)}`;
-                    mfEq2Live.textContent = `|q̇| = ${vMag.toFixed(3)} ${unitStr}/s,   |q̈| = ${aMag > 5 ? 'IMPULSE!' : aMag.toFixed(2) + ' ' + unitStr + '/s²'}`;
-                } else if (motion.method === 'lpf1') {
-                    const alpha = FIXED_DT / (motion.tau + FIXED_DT);
-                    mfEq1Live.textContent = `τ = ${motion.tau.toFixed(2)} s,  Δt = ${(FIXED_DT * 1000).toFixed(2)} ms  ⇒  α = ${alpha.toFixed(4)}`;
-                    mfEq2Live.textContent = `q̇_f = (q_ref − q_f)/τ  ⇒  |q̇_f| = ${vMag.toFixed(3)} ${unitStr}/s  (lag ≈ ${motion.tau.toFixed(2)} s)`;
-                } else if (motion.method === 'lpf2') {
-                    const wn = motion.wn, z = motion.zeta;
-                    mfEq1Live.textContent = `ωₙ = ${wn.toFixed(1)} rad/s,  ζ = ${z.toFixed(2)} (${motion.lastPhase}),  ωₙ² = ${(wn * wn).toFixed(1)}`;
-                    mfEq2Live.textContent = `|q̈_f| = ${aMag.toFixed(2)} ${unitStr}/s²,   |q̇_f| = ${vMag.toFixed(3)} ${unitStr}/s`;
-                } else if (motion.method === 'trapezoid') {
-                    const b = motion.blend;
-                    const an = 1 / (b * (1 - b));
-                    const vn = 1 / (1 - b);
-                    mfEq1Live.textContent = `b = ${b.toFixed(2)},  u = ${u.toFixed(3)} [${motion.lastPhase}]  ⇒  s(u) = ${motion.lastS.toFixed(3)} (vₙ=${vn.toFixed(2)}, aₙ=${an.toFixed(2)})`;
-                    mfEq2Live.textContent = `s'(u) = ${motion.lastS1.toFixed(3)},  s''(u) = ${motion.lastS2.toFixed(2)}  ⇒  |q̇|=${vMag.toFixed(3)}, |q̈|=${aMag.toFixed(2)}`;
-                } else if (motion.method === 'quintic') {
-                    mfEq1Live.textContent = `u = ${u.toFixed(3)} [${motion.lastPhase}]  ⇒  s(u) = 10(${u.toFixed(2)})³ − 15(${u.toFixed(2)})⁴ + 6(${u.toFixed(2)})⁵ = ${motion.lastS.toFixed(4)}`;
-                    mfEq2Live.textContent = `s'(u) = ${motion.lastS1.toFixed(3)},  s''(u) = ${motion.lastS2.toFixed(2)}  ⇒  |q̇|=${vMag.toFixed(3)} ${unitStr}/s, |q̈|=${aMag.toFixed(2)} ${unitStr}/s²`;
-                } else if (motion.method === 'fir') {
-                    const tw = motion.firN * FIXED_DT;
-                    const lag = ((motion.firN - 1) * FIXED_DT) / 2;
-                    mfEq1Live.textContent = `N = ${motion.firN} taps,  T_w = ${tw.toFixed(3)} s,  group delay = ${lag.toFixed(3)} s`;
-                    mfEq2Live.textContent = `|q̇_f| = ${vMag.toFixed(3)} ${unitStr}/s,   |q̈_f| = ${aMag.toFixed(2)} ${unitStr}/s²`;
-                }
+                rateStatusBadge.textContent = motion.playing
+                    ? (motion.clampedStep ? 'STATE: INCREMENTING' : 'STATE: AT SETPOINT')
+                    : 'STATE: READY';
+                rateStatusBadge.classList.toggle('out-of-reach', motion.playing && motion.clampedStep);
 
-                mfStateFormula.innerHTML = isJoint
-                    ? '<span>Space: JOINT (&theta;<sub>1</sub>, &theta;<sub>2</sub>)&nbsp;&bull;&nbsp;Seg: W<sub>' + motion.segIndex + '</sub> &rarr; W<sub>' + ((motion.segIndex + 1) % Math.max(1, motion.waypoints.length)) + '</sub></span>'
-                    : '<span>Space: TASK (x, y)&nbsp;&bull;&nbsp;Seg: W<sub>' + motion.segIndex + '</sub> &rarr; W<sub>' + ((motion.segIndex + 1) % Math.max(1, motion.waypoints.length)) + '</sub></span>';
-
-                mfStateLive.textContent = `q_ref = ${fmtPair(qR)}   |   q_f = ${fmtPair(qF)}`;
-                mfErrLive.textContent = `e = ${errMag.toFixed(4)} ${unitStr}   |   |v| = ${vMag.toFixed(3)} ${unitStr}/s   |   |a| = ${aMag.toFixed(2)} ${unitStr}/s²`;
-                scopePeaks.textContent = `PEAK |v|=${motion.peakVel.toFixed(2)} |a|=${motion.peakAcc.toFixed(2)}`;
+                scopePeaks.textContent = `ERR |e|=${errMag.toFixed(3)} | MAX=${motion.peakErr.toFixed(3)}`;
             }
 
             function updateRangeLimits() {
@@ -1833,27 +1522,20 @@
                 }
                 modeBadge.textContent = `MODE: ${state.mode}`;
 
-                btnElbowDown.classList.toggle('active', state.elbowSign > 0);
-                btnElbowUp.classList.toggle('active', state.elbowSign < 0);
+                const isAltSol = state.elbowSign > 0;
+                btnElbow.textContent = `[ ALT SOLUTION: ${isAltSol ? 'ON' : 'OFF'} ]`;
+                btnElbow.classList.toggle('active', isAltSol);
                 btnUnit.textContent = `[ UNIT: ${state.unit.toUpperCase()} ]`;
                 angleUnitLabel.textContent = state.unit.toUpperCase();
-                btnGhost.textContent = `[ ALT SOL: ${state.showGhost ? 'ON' : 'OFF'} ]`;
-                btnGhost.classList.toggle('active', state.showGhost);
                 btnTrail.textContent = `[ TRAIL: ${state.showTrail ? 'ON' : 'OFF'} ]`;
                 btnTrail.classList.toggle('active', state.showTrail);
 
                 // Playback controls
                 btnPlay.textContent = motion.playing ? '[ ❚❚ PAUSE ]' : '[ ▶ PLAY ]';
                 btnPlay.classList.toggle('active', motion.playing);
-                btnLoop.textContent = `[ LOOP: ${motion.loop ? 'ON' : 'OFF'} ]`;
-                btnLoop.classList.toggle('active', motion.loop);
-                btnSpace.textContent = motion.space === 'task' ? '[ SPACE: TASK (x,y) ]' : '[ SPACE: JOINT (θ1,θ2) ]';
-                btnClickAdd.textContent = `[ CLICK-TO-ADD: ${motion.clickToAdd ? 'ON' : 'OFF'} ]`;
-                btnClickAdd.classList.toggle('active', motion.clickToAdd);
-                canvas.classList.toggle('add-wp-cursor', motion.clickToAdd);
 
                 const seqState = motion.playing
-                    ? `RUNNING SEG ${motion.segIndex} (${motion.lastPhase})`
+                    ? `MOVING TO W${motion.targetWpIdx}`
                     : `STOPPED (${motion.waypoints.length} WAYPOINTS)`;
                 playbackStatus.textContent = `SEQ: ${seqState}`;
 
@@ -1883,36 +1565,25 @@
                 rngL2.value = state.L2;
 
                 // Kinematics live equations
-                const rRaw = Math.hypot(state.targetX, state.targetY);
-                const rUsed = Math.hypot(state.clampedX, state.clampedY);
                 const rawCos = (state.clampedX * state.clampedX + state.clampedY * state.clampedY - state.L1 * state.L1 - state.L2 * state.L2) / (2 * state.L1 * state.L2);
                 const cosT2 = clamp(rawCos, -1, 1);
                 const sinT2 = Math.sin(state.theta2);
                 const phi = Math.atan2(state.clampedY, state.clampedX);
                 const psi = Math.atan2(state.L2 * sinT2, state.L1 + state.L2 * cosT2);
 
-                if (state.reachable) {
-                    liveR.textContent = `r = √(${state.targetX.toFixed(2)}² + ${state.targetY.toFixed(2)}²) = ${rRaw.toFixed(3)}  ∈  [${rMin.toFixed(2)}, ${rMax.toFixed(2)}]  (OK)`;
-                    liveR.classList.remove('alert');
-                } else {
-                    liveR.textContent = `r = ${rRaw.toFixed(3)}  ∉  [${rMin.toFixed(2)}, ${rMax.toFixed(2)}]  ⇒  clamped r = ${rUsed.toFixed(3)}`;
-                    liveR.classList.add('alert');
-                }
-
-                const signChar = state.elbowSign > 0 ? '+' : '−';
-                liveT2.textContent = `cos(θ₂) = ${cosT2.toFixed(3)},  sin(θ₂) = ${signChar}${Math.abs(sinT2).toFixed(3)}  ⇒  θ₂ = ${formatAngle(state.theta2, 2)}`;
-                liveT1.textContent = `θ₁ = ${formatAngle(phi, 2)} − ${formatAngle(psi, 2)} = ${formatAngle(state.theta1, 2)}`;
+                liveT2.textContent = `cos_t2 = ${cosT2.toFixed(3)}, sin_t2 = ${sinT2.toFixed(3)} => theta2 = ${formatAngle(state.theta2, 2)}`;
+                liveT1.textContent = `theta1 = ${formatAngle(phi, 2)} - ${formatAngle(psi, 2)} = ${formatAngle(state.theta1, 2)}`;
 
                 const x1 = state.L1 * Math.cos(state.theta1);
                 const y1 = state.L1 * Math.sin(state.theta1);
-                liveElbow.textContent = `x₁ = ${state.L1.toFixed(2)}·cos(${formatAngle(state.theta1, 1)}) = ${x1.toFixed(3)},   y₁ = ${y1.toFixed(3)}`;
+                liveElbow.textContent = `x1 = ${state.L1.toFixed(2)} * cos(${formatAngle(state.theta1, 1)}) = ${x1.toFixed(3)}, y1 = ${y1.toFixed(3)}`;
 
                 const [fx, fy] = fkFromAngles(state.theta1, state.theta2);
-                liveFK.textContent = `x = ${fx.toFixed(3)},   y = ${fy.toFixed(3)}`;
+                liveFK.textContent = `x = ${fx.toFixed(3)}, y = ${fy.toFixed(3)}`;
 
                 const detJ = state.L1 * state.L2 * Math.sin(state.theta2);
                 const isSingular = Math.abs(Math.sin(state.theta2)) < 0.03;
-                liveDet.textContent = `det(J) = ${state.L1.toFixed(2)}·${state.L2.toFixed(2)}·sin(${formatAngle(state.theta2, 1)}) = ${detJ.toFixed(3)}  ${isSingular ? '(NEAR SINGULARITY!)' : '(NON-SINGULAR)'}`;
+                liveDet.textContent = `det_J = ${state.L1.toFixed(2)} * ${state.L2.toFixed(2)} * sin(${formatAngle(state.theta2, 1)}) = ${detJ.toFixed(3)} ${isSingular ? '(NEAR SINGULARITY!)' : '(NON-SINGULAR)'}`;
                 liveDet.classList.toggle('alert', isSingular);
 
                 updateMotionEquationsLive();
@@ -1964,7 +1635,7 @@
                 ctx.restore();
             }
 
-            function drawLink(x0, y0, x1, y1, width, isGhost) {
+            function drawLink(x0, y0, x1, y1, width) {
                 const dx = x1 - x0, dy = y1 - y0;
                 const len = Math.hypot(dx, dy);
                 if (len < 1) return;
@@ -1972,18 +1643,6 @@
                 const hw = width / 2;
 
                 ctx.save();
-                if (isGhost) {
-                    ctx.beginPath();
-                    ctx.moveTo(x0, y0);
-                    ctx.lineTo(x1, y1);
-                    ctx.strokeStyle = 'rgba(255, 176, 0, 0.24)';
-                    ctx.lineWidth = 2.5;
-                    ctx.setLineDash([6, 6]);
-                    ctx.stroke();
-                    ctx.restore();
-                    return;
-                }
-
                 ctx.shadowColor = 'rgba(255, 176, 0, 0.75)';
                 ctx.shadowBlur = 10;
                 ctx.beginPath();
@@ -2095,36 +1754,34 @@
                         ctx.setLineDash([]);
                     }
 
+                    const activeWp = motion.playing
+                        ? motion.targetWpIdx % motion.waypoints.length
+                        : (motion.draggingWpIdx >= 0 ? motion.draggingWpIdx : motion.activeWpIdx);
+
                     motion.waypoints.forEach((wp, idx) => {
                         const p = worldToScreen(wp.x, wp.y, vp);
-                        const isCur = motion.playing && (idx === motion.segIndex % motion.waypoints.length);
+                        const isCur = idx === activeWp;
+                        const isHover = idx === motion.hoverWpIdx || idx === motion.draggingWpIdx;
+                        if (isCur || isHover) {
+                            ctx.beginPath();
+                            ctx.arc(p.sx, p.sy, 11, 0, Math.PI * 2);
+                            ctx.strokeStyle = isHover ? 'rgba(255, 176, 0, 0.9)' : 'rgba(255, 176, 0, 0.5)';
+                            ctx.lineWidth = 1.4;
+                            ctx.stroke();
+                        }
                         ctx.beginPath();
-                        ctx.rect(p.sx - 5, p.sy - 5, 10, 10);
+                        ctx.rect(p.sx - 5.5, p.sy - 5.5, 11, 11);
                         ctx.fillStyle = isCur ? '#ffb000' : '#140b00';
                         ctx.strokeStyle = '#ffb000';
-                        ctx.lineWidth = 1.6;
+                        ctx.lineWidth = isHover ? 2.2 : 1.6;
                         ctx.fill();
                         ctx.stroke();
 
                         ctx.font = 'bold 11px "Courier New", monospace';
-                        ctx.fillStyle = '#d8b140';
+                        ctx.fillStyle = isCur ? '#ffb000' : '#d8b140';
                         ctx.textAlign = 'left';
-                        ctx.fillText(`W${idx}`, p.sx + 8, p.sy - 7);
+                        ctx.fillText(`W${idx}`, p.sx + 9, p.sy - 8);
                     });
-
-                    // Moving unfiltered reference diamond when playing
-                    if (motion.playing) {
-                        const rp = worldToScreen(motion.refCartesian[0], motion.refCartesian[1], vp);
-                        ctx.strokeStyle = 'rgba(216, 177, 64, 0.9)';
-                        ctx.lineWidth = 1.6;
-                        ctx.beginPath();
-                        ctx.moveTo(rp.sx, rp.sy - 7);
-                        ctx.lineTo(rp.sx + 7, rp.sy);
-                        ctx.lineTo(rp.sx, rp.sy + 7);
-                        ctx.lineTo(rp.sx - 7, rp.sy);
-                        ctx.closePath();
-                        ctx.stroke();
-                    }
                     ctx.restore();
                 }
 
@@ -2145,18 +1802,8 @@
                     ctx.restore();
                 }
 
-                // 6. Ghost Alt Solution
+                // 6. Active Arm
                 const base = worldToScreen(0, 0, vp);
-                if (state.showGhost && Math.abs(state.theta2) > 0.02) {
-                    const altE = worldToScreen(state.L1 * Math.cos(state.altTheta1), state.L1 * Math.sin(state.altTheta1), vp);
-                    const altEnd = worldToScreen(state.clampedX, state.clampedY, vp);
-                    drawLink(base.sx, base.sy, altE.sx, altE.sy, 8, true);
-                    drawLink(altE.sx, altE.sy, altEnd.sx, altEnd.sy, 8, true);
-                    ctx.beginPath(); ctx.arc(altE.sx, altE.sy, 4, 0, Math.PI * 2);
-                    ctx.fillStyle = 'rgba(255, 176, 0, 0.35)'; ctx.fill();
-                }
-
-                // 7. Active Arm
                 const elbowW = { x: state.L1 * Math.cos(state.theta1), y: state.L1 * Math.sin(state.theta1) };
                 const [ex, ey] = fkFromAngles(state.theta1, state.theta2);
                 const elbow = worldToScreen(elbowW.x, elbowW.y, vp);
@@ -2174,8 +1821,8 @@
                 drawAngleArc(base.sx, base.sy, Math.min(34, state.L1 * vp.scale * 0.45), 0, state.theta1, 'θ1');
                 drawAngleArc(elbow.sx, elbow.sy, Math.min(28, state.L2 * vp.scale * 0.45), state.theta1, state.theta2, 'θ2');
 
-                drawLink(base.sx, base.sy, elbow.sx, elbow.sy, 13, false);
-                drawLink(elbow.sx, elbow.sy, end.sx, end.sy, 10, false);
+                drawLink(base.sx, base.sy, elbow.sx, elbow.sy, 13);
+                drawLink(elbow.sx, elbow.sy, end.sx, end.sy, 10);
 
                 ctx.save();
                 ctx.font = 'bold 12px "Courier New", monospace';
@@ -2245,94 +1892,166 @@
                 const w = rect.width, h = rect.height;
                 sctx.clearRect(0, 0, w, h);
 
-                // Scope graticule
-                sctx.strokeStyle = 'rgba(255, 176, 0, 0.14)';
-                sctx.lineWidth = 1;
-                for (let i = 1; i < 4; i++) {
-                    const y = (h / 4) * i;
-                    sctx.beginPath(); sctx.moveTo(0, y); sctx.lineTo(w, y); sctx.stroke();
-                }
-                for (let i = 1; i < 8; i++) {
-                    const x = (w / 8) * i;
-                    sctx.beginPath(); sctx.moveTo(x, 0); sctx.lineTo(x, h); sctx.stroke();
-                }
+                const gap = 16;
+                const boxH = (h - gap * 2) / 3;
 
-                sctx.font = '11px "Courier New", monospace';
-                sctx.fillStyle = 'rgba(255, 176, 0, 0.65)';
-                sctx.fillText('OSCILLOSCOPE // LIVE KINEMATIC RESPONSE', 8, 15);
+                const angUnit = state.unit.toUpperCase();
+                const ch1Label = 'CH1: SPEED CMD (vx, vy)';
+                const ch2Label = 'CH2: POSITION (x, y)';
+                const ch3Label = `CH3: ANGLES (theta1, theta2) [${angUnit}]`;
 
-                const n = motion.scopeVel.length;
-                if (n < 2) {
-                    sctx.fillStyle = 'rgba(255, 176, 0, 0.45)';
-                    sctx.textAlign = 'center';
-                    sctx.fillText('PRESS [ PLAY ] TO STREAM MOTION WAVEFORMS', w / 2, h / 2);
+                const vLim = Math.max(motion.maxIncrement / FIXED_DT, 0.5) * 1.15;
+                const posLim = state.L1 + state.L2;
+                const angLim = state.unit === 'deg' ? 180 : Math.PI;
+                const angScale = state.unit === 'deg' ? RAD2DEG : 1;
+
+                function drawChannel(solidArr, dashArr, yTop, height, label, k1, k2, lo, hi, scaleMul = 1) {
+                    const padT = 18, padB = 8;
+                    const plotTop = yTop + padT;
+                    const plotH = Math.max(10, (yTop + height - padB) - plotTop);
+
+                    // Box background & border
+                    sctx.save();
+                    sctx.fillStyle = 'rgba(8, 4, 0, 0.92)';
+                    sctx.fillRect(0.5, yTop + 0.5, w - 1, height - 1);
+                    sctx.strokeStyle = 'rgba(255, 176, 0, 0.45)';
+                    sctx.lineWidth = 1;
+                    sctx.strokeRect(0.5, yTop + 0.5, w - 1, height - 1);
+
+                    // Graticule inside box
+                    sctx.strokeStyle = 'rgba(255, 176, 0, 0.10)';
+                    for (let i = 1; i < 8; i++) {
+                        const x = (w / 8) * i;
+                        sctx.beginPath(); sctx.moveTo(x, yTop); sctx.lineTo(x, yTop + height); sctx.stroke();
+                    }
+                    const mapY = (val) => plotTop + (1 - clamp((val - lo) / (hi - lo), 0, 1)) * plotH;
+
+                    // Zero reference line
+                    if (lo < 0 && hi > 0) {
+                        const zy = mapY(0);
+                        sctx.strokeStyle = 'rgba(255, 176, 0, 0.25)';
+                        sctx.setLineDash([2, 4]);
+                        sctx.beginPath(); sctx.moveTo(0, zy); sctx.lineTo(w, zy); sctx.stroke();
+                        sctx.setLineDash([]);
+                    }
+
+                    // Fixed range ticks on left
+                    const dec = (hi >= 50) ? 0 : 1;
+                    sctx.font = '10px "Courier New", monospace';
+                    sctx.fillStyle = 'rgba(255, 176, 0, 0.48)';
+                    sctx.textAlign = 'left';
+                    sctx.fillText(`+${hi.toFixed(dec)}`, 6, plotTop + 8);
+                    sctx.fillText(`${lo.toFixed(dec)}`, 6, yTop + height - 5);
+
+                    // Header label
+                    sctx.font = '11px "Courier New", monospace';
+                    sctx.fillStyle = 'rgba(255, 176, 0, 0.85)';
+                    sctx.textAlign = 'left';
+                    sctx.fillText(label, 8, yTop + 13);
+
+                    if (solidArr.length < 2) {
+                        sctx.fillStyle = 'rgba(255, 176, 0, 0.4)';
+                        sctx.textAlign = 'center';
+                        sctx.fillText('PRESS [ PLAY ] TO STREAM', w / 2, yTop + height / 2 + 4);
+                        sctx.restore();
+                        return;
+                    }
+
+                    // Solid lighter amber trace (vy / y / theta2)
+                    sctx.beginPath();
+                    for (let i = 0; i < dashArr.length; i++) {
+                        const x = (i / (SCOPE_SAMPLES - 1)) * w;
+                        const y = mapY(dashArr[i] * scaleMul);
+                        if (i === 0) sctx.moveTo(x, y);
+                        else sctx.lineTo(x, y);
+                    }
+                    sctx.strokeStyle = '#ffe08a';
+                    sctx.shadowColor = 'rgba(255, 224, 138, 0.55)';
+                    sctx.shadowBlur = 4;
+                    sctx.lineWidth = 1.8;
+                    sctx.stroke();
+                    sctx.shadowBlur = 0;
+
+                    // Solid glowing amber trace (vx / x / theta1)
+                    sctx.beginPath();
+                    for (let i = 0; i < solidArr.length; i++) {
+                        const x = (i / (SCOPE_SAMPLES - 1)) * w;
+                        const y = mapY(solidArr[i] * scaleMul);
+                        if (i === 0) sctx.moveTo(x, y);
+                        else sctx.lineTo(x, y);
+                    }
+                    sctx.strokeStyle = '#ffb000';
+                    sctx.shadowColor = 'rgba(255, 176, 0, 0.85)';
+                    sctx.shadowBlur = 6;
+                    sctx.lineWidth = 2.0;
+                    sctx.stroke();
+                    sctx.shadowBlur = 0;
+
+                    // Live numeric values
+                    const cur1 = solidArr[solidArr.length - 1] * scaleMul;
+                    const cur2 = dashArr[dashArr.length - 1] * scaleMul;
+                    const vDec = scaleMul > 10 ? 1 : 2;
+                    sctx.fillStyle = 'rgba(255, 176, 0, 0.88)';
+                    sctx.textAlign = 'right';
+                    sctx.fillText(`${k1}=${cur1.toFixed(vDec)} | ${k2}=${cur2.toFixed(vDec)}`, w - 8, yTop + 13);
                     sctx.restore();
-                    return;
                 }
 
-                const maxV = Math.max(1.5, ...motion.scopeVel) * 1.15;
-                const maxA = Math.max(4.0, ...motion.scopeAcc) * 1.15;
-                const padTop = 24, padBot = 14;
-                const plotH = h - padTop - padBot;
+                drawChannel(motion.scopeVx, motion.scopeVy, 0, boxH, ch1Label, 'vx', 'vy', -vLim, vLim, 1);
+                drawChannel(motion.scopeX, motion.scopeY, boxH + gap, boxH, ch2Label, 'x', 'y', -posLim, posLim, 1);
+                drawChannel(motion.scopeT1, motion.scopeT2, (boxH + gap) * 2, boxH, ch3Label, 't1', 't2', -angLim, angLim, angScale);
 
-                // Acceleration (dashed)
-                sctx.save();
-                sctx.beginPath();
-                for (let i = 0; i < n; i++) {
-                    const x = (i / (240 - 1)) * w;
-                    const y = h - padBot - (motion.scopeAcc[i] / maxA) * plotH;
-                    if (i === 0) sctx.moveTo(x, y);
-                    else sctx.lineTo(x, y);
-                }
-                sctx.strokeStyle = 'rgba(216, 177, 64, 0.78)';
-                sctx.lineWidth = 1.5;
-                sctx.setLineDash([4, 4]);
-                sctx.stroke();
-                sctx.restore();
-
-                // Velocity (solid glowing amber)
-                sctx.save();
-                sctx.beginPath();
-                for (let i = 0; i < n; i++) {
-                    const x = (i / (240 - 1)) * w;
-                    const y = h - padBot - (motion.scopeVel[i] / maxV) * plotH;
-                    if (i === 0) sctx.moveTo(x, y);
-                    else sctx.lineTo(x, y);
-                }
-                sctx.strokeStyle = '#ffb000';
-                sctx.shadowColor = 'rgba(255, 176, 0, 0.8)';
-                sctx.shadowBlur = 6;
-                sctx.lineWidth = 2.2;
-                sctx.stroke();
-                sctx.restore();
-
-                // Scale labels
-                sctx.fillStyle = 'rgba(255, 176, 0, 0.7)';
-                sctx.textAlign = 'right';
-                sctx.fillText(`v_max=${maxV.toFixed(1)} | a_max=${maxA.toFixed(1)}`, w - 8, 15);
                 sctx.restore();
             }
 
             // ================= INTERACTION HANDLERS =================
 
-            function getWorldFromPointer(e) {
+            function getScreenFromPointer(e) {
                 const rect = canvas.getBoundingClientRect();
-                const sx = e.clientX - rect.left;
-                const sy = e.clientY - rect.top;
+                return { sx: e.clientX - rect.left, sy: e.clientY - rect.top };
+            }
+
+            function getWorldFromPointer(e) {
+                const { sx, sy } = getScreenFromPointer(e);
                 return screenToWorld(sx, sy, getViewport());
+            }
+
+            function findWaypointAtScreen(sx, sy) {
+                const vp = getViewport();
+                const hitRadius = 14;
+                for (let i = motion.waypoints.length - 1; i >= 0; i--) {
+                    const p = worldToScreen(motion.waypoints[i].x, motion.waypoints[i].y, vp);
+                    if (Math.hypot(sx - p.sx, sy - p.sy) <= hitRadius) {
+                        return i;
+                    }
+                }
+                return -1;
             }
 
             function addWaypoint(wx, wy) {
                 motion.waypoints.push({ x: +wx.toFixed(2), y: +wy.toFixed(2) });
+                motion.activeWpIdx = motion.waypoints.length - 1;
                 renderWaypointList();
                 syncUI();
                 draw();
             }
 
             canvas.addEventListener('pointerdown', (e) => {
-                const { wx, wy } = getWorldFromPointer(e);
-                if (motion.clickToAdd || e.shiftKey) {
+                const { sx, sy } = getScreenFromPointer(e);
+                const { wx, wy } = screenToWorld(sx, sy, getViewport());
+                if (e.shiftKey) {
                     addWaypoint(wx, wy);
+                    return;
+                }
+                const hitWp = findWaypointAtScreen(sx, sy);
+                if (hitWp >= 0) {
+                    canvas.setPointerCapture(e.pointerId);
+                    motion.draggingWpIdx = hitWp;
+                    motion.activeWpIdx = hitWp;
+                    canvas.classList.add('dragging');
+                    canvas.classList.remove('hover-wp');
+                    renderWaypointList();
+                    draw();
                     return;
                 }
                 motion.playing = false;
@@ -2346,15 +2065,43 @@
             });
 
             canvas.addEventListener('pointermove', (e) => {
-                if (!state.dragging) return;
-                const { wx, wy } = getWorldFromPointer(e);
-                state.mode = 'IK';
-                state.targetX = wx;
-                state.targetY = wy;
-                solveIK(true);
+                const { sx, sy } = getScreenFromPointer(e);
+                if (motion.draggingWpIdx >= 0) {
+                    const { wx, wy } = screenToWorld(sx, sy, getViewport());
+                    motion.waypoints[motion.draggingWpIdx] = { x: +wx.toFixed(2), y: +wy.toFixed(2) };
+                    renderWaypointList();
+                    syncUI();
+                    draw();
+                    return;
+                }
+                if (state.dragging) {
+                    const { wx, wy } = screenToWorld(sx, sy, getViewport());
+                    state.mode = 'IK';
+                    state.targetX = wx;
+                    state.targetY = wy;
+                    solveIK(true);
+                    return;
+                }
+                // Hover hit-test for waypoints
+                const hitWp = findWaypointAtScreen(sx, sy);
+                if (hitWp !== motion.hoverWpIdx) {
+                    motion.hoverWpIdx = hitWp;
+                    canvas.classList.toggle('hover-wp', hitWp >= 0);
+                    draw();
+                }
             });
 
             function stopDragging(e) {
+                if (motion.draggingWpIdx >= 0) {
+                    motion.draggingWpIdx = -1;
+                    canvas.classList.remove('dragging');
+                    if (canvas.hasPointerCapture(e.pointerId)) {
+                        canvas.releasePointerCapture(e.pointerId);
+                    }
+                    renderWaypointList();
+                    draw();
+                    return;
+                }
                 if (!state.dragging) return;
                 state.dragging = false;
                 canvas.classList.remove('dragging');
@@ -2364,6 +2111,13 @@
             }
             canvas.addEventListener('pointerup', stopDragging);
             canvas.addEventListener('pointercancel', stopDragging);
+            canvas.addEventListener('pointerleave', () => {
+                if (motion.hoverWpIdx !== -1) {
+                    motion.hoverWpIdx = -1;
+                    canvas.classList.remove('hover-wp');
+                    draw();
+                }
+            });
 
             // X, Y controls
             function onXYInput(axis, rawVal) {
@@ -2412,16 +2166,14 @@
             numL2.addEventListener('input', () => onLinkInput(2, numL2.value));
 
             // Arm toolbar
-            btnElbowDown.addEventListener('click', () => { state.elbowSign = 1; state.mode = 'IK'; solveIK(false); });
-            btnElbowUp.addEventListener('click', () => { state.elbowSign = -1; state.mode = 'IK'; solveIK(false); });
-            btnUnit.addEventListener('click', () => { state.unit = state.unit === 'deg' ? 'rad' : 'deg'; syncUI(); });
-            btnGhost.addEventListener('click', () => { state.showGhost = !state.showGhost; syncUI(); draw(); });
+            btnElbow.addEventListener('click', () => { state.elbowSign = -state.elbowSign; state.mode = 'IK'; solveIK(false); });
+            btnUnit.addEventListener('click', () => { state.unit = state.unit === 'deg' ? 'rad' : 'deg'; syncUI(); drawScope(); });
             btnTrail.addEventListener('click', () => { state.showTrail = !state.showTrail; if (!state.showTrail) state.trail = []; syncUI(); draw(); });
             btnReset.addEventListener('click', () => {
                 motion.playing = false;
                 state.L1 = 1.50; state.L2 = 1.20;
                 state.targetX = 1.40; state.targetY = 1.10;
-                state.elbowSign = 1; state.mode = 'IK'; state.trail = [];
+                state.elbowSign = -1; state.mode = 'IK'; state.trail = [];
                 solveIK(false);
                 drawScope();
             });
@@ -2430,10 +2182,14 @@
             btnPlay.addEventListener('click', () => {
                 if (motion.waypoints.length < 2) return;
                 if (!motion.playing) {
-                    if (motion.segIndex === 0 && motion.segTime === 0) {
-                        state.trail = [];
-                        resetFilterStateAtWaypoint(0);
+                    motion.actPos = [state.targetX, state.targetY];
+                    if (motion.targetWpIdx >= motion.waypoints.length) motion.targetWpIdx = 0;
+                    const curWp = motion.waypoints[motion.targetWpIdx];
+                    if (Math.abs(curWp.x - motion.actPos[0]) <= 0.002 &&
+                        Math.abs(curWp.y - motion.actPos[1]) <= 0.002) {
+                        motion.targetWpIdx = (motion.targetWpIdx + 1) % motion.waypoints.length;
                     }
+                    motion.activeWpIdx = motion.targetWpIdx;
                     motion.playing = true;
                     motion.accum = 0;
                 } else {
@@ -2446,11 +2202,9 @@
 
             btnStop.addEventListener('click', () => {
                 motion.playing = false;
-                motion.segIndex = 0;
-                motion.segTime = 0;
                 state.trail = [];
                 if (motion.waypoints.length > 0) {
-                    resetFilterStateAtWaypoint(0);
+                    resetMotionAtWaypoint(0);
                     state.targetX = motion.waypoints[0].x;
                     state.targetY = motion.waypoints[0].y;
                     solveIK(false);
@@ -2459,32 +2213,11 @@
                 drawScope();
             });
 
-            btnLoop.addEventListener('click', () => {
-                motion.loop = !motion.loop;
-                syncUI();
-                draw();
-            });
-
-            btnSpace.addEventListener('click', () => {
-                motion.space = motion.space === 'task' ? 'joint' : 'task';
-                state.trail = [];
-                resetFilterStateAtWaypoint(motion.segIndex);
-                syncUI();
-                draw();
-                drawScope();
-            });
-
-            btnAddCur.addEventListener('click', () => addWaypoint(state.clampedX, state.clampedY));
-            btnClickAdd.addEventListener('click', () => {
-                motion.clickToAdd = !motion.clickToAdd;
-                syncUI();
-            });
-
             btnClearWp.addEventListener('click', () => {
                 motion.playing = false;
                 motion.waypoints = [];
-                motion.segIndex = 0;
-                motion.segTime = 0;
+                motion.targetWpIdx = 0;
+                motion.activeWpIdx = 0;
                 state.trail = [];
                 renderWaypointList();
                 syncUI();
@@ -2495,10 +2228,8 @@
             function loadPreset(pts) {
                 motion.playing = false;
                 motion.waypoints = pts.map(p => ({ x: p[0], y: p[1] }));
-                motion.segIndex = 0;
-                motion.segTime = 0;
                 state.trail = [];
-                resetFilterStateAtWaypoint(0);
+                resetMotionAtWaypoint(0);
                 state.targetX = motion.waypoints[0].x;
                 state.targetY = motion.waypoints[0].y;
                 solveIK(false);
@@ -2511,90 +2242,43 @@
             btnPresetPick.addEventListener('click', () => loadPreset([[-1.40, 0.30], [-1.40, 1.45], [1.40, 1.45], [1.40, 0.30], [1.40, 1.45], [-1.40, 1.45]]));
 
             wpListEl.addEventListener('click', (e) => {
-                const delBtn = e.target.closest('[data-del]');
-                if (delBtn) {
-                    const idx = parseInt(delBtn.dataset.del, 10);
-                    motion.waypoints.splice(idx, 1);
-                    if (motion.waypoints.length < 2) motion.playing = false;
-                    motion.segIndex = 0;
-                    motion.segTime = 0;
-                    renderWaypointList();
-                    syncUI();
-                    draw();
-                    return;
-                }
                 const jumpEl = e.target.closest('[data-jump]');
                 if (jumpEl) {
                     const idx = parseInt(jumpEl.dataset.jump, 10);
                     const wp = motion.waypoints[idx];
                     if (wp) {
                         motion.playing = false;
+                        motion.targetWpIdx = idx;
+                        motion.activeWpIdx = idx;
                         state.mode = 'IK';
                         state.targetX = wp.x;
                         state.targetY = wp.y;
                         solveIK(false);
+                        motion.actPos = [wp.x, wp.y];
+                        motion.spPos = [wp.x, wp.y];
+                        renderWaypointList();
                     }
                 }
             });
 
-            // Segment duration
-            function onSegT(val) {
+            // Max increment parameter listeners
+            function onIncInput(val) {
                 const v = parseFloat(val);
-                if (Number.isNaN(v) || v < 0.2) return;
-                motion.segDuration = clamp(v, 0.2, 10.0);
-                rngSegT.value = clamp(motion.segDuration, 0.4, 4.0);
-                if (document.activeElement !== numSegT) numSegT.value = motion.segDuration.toFixed(1);
+                if (Number.isNaN(v)) return;
+                motion.maxIncrement = clamp(v, 0.001, 0.200);
+                rngInc.value = clamp(motion.maxIncrement, 0.001, 0.050);
+                if (document.activeElement !== numInc) numInc.value = motion.maxIncrement.toFixed(3);
                 syncUI();
+                drawScope();
             }
-            rngSegT.addEventListener('input', () => onSegT(rngSegT.value));
-            numSegT.addEventListener('input', () => onSegT(numSegT.value));
-
-            // Filter method selector
-            methodBtns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    motion.method = btn.dataset.method;
-                    state.trail = [];
-                    motion.scopeVel = [];
-                    motion.scopeAcc = [];
-                    motion.peakVel = 0;
-                    motion.peakAcc = 0;
-                    if (!motion.playing) resetFilterStateAtWaypoint(motion.segIndex);
-                    renderMethodStaticInfo();
-                    syncUI();
-                    draw();
-                    drawScope();
-                });
-            });
-
-            // Filter parameter listeners
-            function bindParam(rng, num, key, lo, hi, dec, onAfter) {
-                const handler = (val) => {
-                    const v = parseFloat(val);
-                    if (Number.isNaN(v)) return;
-                    motion[key] = clamp(v, lo, hi);
-                    rng.value = motion[key];
-                    if (document.activeElement !== num) num.value = dec === 0 ? Math.round(motion[key]) : motion[key].toFixed(dec);
-                    if (onAfter) onAfter();
-                    syncUI();
-                };
-                rng.addEventListener('input', () => handler(rng.value));
-                num.addEventListener('input', () => handler(num.value));
-            }
-
-            bindParam(rngTau, numTau, 'tau', 0.01, 2.0, 2);
-            bindParam(rngWn, numWn, 'wn', 1.0, 40.0, 1);
-            bindParam(rngZeta, numZeta, 'zeta', 0.1, 3.0, 2);
-            bindParam(rngBlend, numBlend, 'blend', 0.05, 0.50, 2);
-            bindParam(rngFir, numFir, 'firN', 2, 120, 0, () => {
-                while (motion.firBuf.length > motion.firN) motion.firBuf.shift();
-            });
+            rngInc.addEventListener('input', () => onIncInput(rngInc.value));
+            numInc.addEventListener('input', () => onIncInput(numInc.value));
 
             window.addEventListener('resize', () => { draw(); drawScope(); });
 
             // Init
-            renderMethodStaticInfo();
             renderWaypointList();
-            resetFilterStateAtWaypoint(0);
+            resetMotionAtWaypoint(0);
             state.targetX = motion.waypoints[0].x;
             state.targetY = motion.waypoints[0].y;
             solveIK(false);
