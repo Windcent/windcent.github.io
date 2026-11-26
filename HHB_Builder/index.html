@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HHB_BUILDER // Hot Air Balloon Envelope Planner & Flight Terminal</title>
+  <link rel="stylesheet" href="css/terminal.css">
+</head>
+<body>
+  <!-- CRT Phosphor Scanline Texture & Glass Vignette -->
+  <div class="scanline-overlay" id="scanlineOverlay" style="display: none;"></div>
+
+  <!-- Master CRT Screen Shell -->
+  <div class="crt-screen">
+    <!-- Top System Header HUD -->
+    <header class="terminal-header">
+      <div class="header-left">
+        <div class="system-logo">
+          <span class="logo-bracket">[</span>HHB-84 AERONAUTICS TERMINAL<span class="logo-bracket">]</span>
+        </div>
+
+        <div class="header-telem-ticker">
+          <div class="ticker-item">
+            <span class="ticker-label">VOL:</span>
+            <span class="ticker-val" id="headerTelemVol">9.0 m³</span>
+          </div>
+          <div class="ticker-item">
+            <span class="ticker-label">AREA:</span>
+            <span class="ticker-val" id="headerTelemArea">24.2 m²</span>
+          </div>
+          <div class="ticker-item">
+            <span class="ticker-label">GROSS LIFT:</span>
+            <span class="ticker-val" id="headerTelemLift">5.54 lbs</span>
+          </div>
+          <div class="ticker-item">
+            <span class="ticker-label">NET LIFT:</span>
+            <span class="ticker-val text-flare" id="headerTelemPayloadLbs">2.26 lbs</span>
+          </div>
+          <div class="ticker-item">
+            <span class="ticker-label">CLASS:</span>
+            <span class="ticker-val" id="headerTelemFAI">RC MODEL</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <button class="btn-terminal btn-sm active" id="btnAudioToggle">[AUDIO: ON]</button>
+        <button class="btn-terminal btn-sm" id="btnScanlineToggle">[SCANLINES: OFF]</button>
+        <button class="btn-terminal btn-sm" id="btnUnitToggle">[UNITS: METRIC]</button>
+        <button class="btn-terminal btn-sm" id="btnExportJSON">EXPORT SPEC</button>
+        <button class="btn-terminal btn-sm" id="btnImportJSON">IMPORT SPEC</button>
+        <input type="file" id="fileImportJSON" accept=".json" style="display: none;" />
+        <div class="terminal-clock" id="terminalClock">00:00:00 UTC</div>
+      </div>
+    </header>
+
+    <!-- Sub-Navbar: Layout View Modes & Profile Preset Selector -->
+    <nav class="terminal-nav-bar">
+      <div class="tab-nav-group">
+        <button class="tab-nav-btn active" data-tab="quad">QUAD DASHBOARD</button>
+        <button class="tab-nav-btn" data-tab="profile">2D PROFILE EDITOR</button>
+        <button class="tab-nav-btn" data-tab="3d">3D WIREFRAME</button>
+        <button class="tab-nav-btn" data-tab="cutout">SEGMENT CUTOUT PLANNER</button>
+        <button class="tab-nav-btn" data-tab="flight">FLIGHT COMPUTER</button>
+      </div>
+
+      <div class="preset-controls">
+        <span class="selector-label">SHAPE PRESET (ADIMENSIONAL):</span>
+        <select id="selectPreset" class="terminal-select">
+          <option value="ADIM_MODEL_CONICAL">Model Conical (Optimized 4-Gore Flat Build)</option>
+          <option value="ADIM_NATURAL">Natural Shape (Taylor/Smalley Membrane)</option>
+          <option value="ADIM_CLASSIC_TEARDROP">Classic Teardrop (AX Sphere-Cone)</option>
+          <option value="ADIM_RACER">High-Aspect Racer (Competition Streamline)</option>
+          <option value="ADIM_BULBOUS_HOPPER">Bulbous Hopper (High Volume / Low Aspect)</option>
+          <option value="ADIM_SPHERICAL" selected>Spherical Aerostat (Minimal Fabric Skin)</option>
+        </select>
+        <span class="preset-desc" id="presetDescription">// Adimensional near-spherical geometry [H=1.0, D=0.98]. Optimal surface-area-to-volume ratio for minimum envelope structural weight.</span>
+      </div>
+    </nav>
+
+    <!-- Aeronautical Telemetry Summary Top Banner (Volume, Area, Gross Lift, Net Lift) -->
+    <section class="top-telemetry-banner" id="topTelemetryBanner">
+      <div class="banner-stat-box">
+        <div class="banner-stat-header">
+          <span class="banner-stat-label">ENVELOPE VOLUME</span>
+          <span class="banner-stat-icon">◈</span>
+        </div>
+        <div class="banner-stat-body">
+          <span class="banner-stat-val" id="topBannerVol">0.0 m³</span>
+          <span class="banner-stat-sub" id="topBannerVolSub">0 cu ft</span>
+        </div>
+      </div>
+
+      <div class="banner-stat-box">
+        <div class="banner-stat-header">
+          <span class="banner-stat-label">SURFACE AREA</span>
+          <span class="banner-stat-icon">◫</span>
+        </div>
+        <div class="banner-stat-body">
+          <span class="banner-stat-val" id="topBannerArea">0.0 m²</span>
+          <span class="banner-stat-sub" id="topBannerAreaSub">0 sq ft</span>
+        </div>
+      </div>
+
+      <div class="banner-stat-box">
+        <div class="banner-stat-header">
+          <span class="banner-stat-label">GROSS LIFT</span>
+          <span class="banner-stat-icon">▲</span>
+        </div>
+        <div class="banner-stat-body">
+          <span class="banner-stat-val" id="topBannerGrossLift">0.00 lbs</span>
+          <span class="banner-stat-sub" id="topBannerGrossLiftSub">0.00 kg</span>
+        </div>
+      </div>
+
+      <div class="banner-stat-box highlight-net">
+        <div class="banner-stat-header">
+          <span class="banner-stat-label">NET LIFT (PAYLOAD CAPACITY)</span>
+          <span class="banner-stat-icon">⚡</span>
+        </div>
+        <div class="banner-stat-body">
+          <span class="banner-stat-val text-flare" id="topBannerNetLift">0.00 lbs</span>
+          <span class="banner-stat-sub" id="topBannerNetLiftSub">0.0 oz / 0.00 kg</span>
+        </div>
+        <div class="banner-stat-footnote" id="topBannerDeduction">
+          // After Envelope & Fuel+Container
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Workspace Container -->
+    <main class="workspace-container">
+      <div class="workspace-grid layout-quad" id="mainWorkspaceGrid">
+
+        <!-- PANEL 1: 2D Envelope Profile Editor -->
+        <section class="terminal-panel panel-profile">
+          <div class="panel-header">
+            <span>[1] 2D PROFILE EDITOR // SILHOUETTE SPLINE</span>
+            <div class="panel-tools">
+              <button class="btn-terminal btn-sm" id="btnResetProfileView">RESET FIT</button>
+              <button class="btn-terminal btn-sm active" id="btnToggleMirror">MIRROR</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="canvas-viewport">
+              <canvas id="canvasProfile2D"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- PANEL 2: 3D Wireframe Visualizer -->
+        <section class="terminal-panel panel-wireframe">
+          <div class="panel-header">
+            <span>[2] 3D WIREFRAME VISUALIZER // REVOLVED MESH</span>
+            <div class="panel-tools">
+              <button class="btn-terminal btn-sm" id="btnCamPersp">PERSP</button>
+              <button class="btn-terminal btn-sm" id="btnCamFront">FRONT</button>
+              <button class="btn-terminal btn-sm" id="btnCamSide">SIDE</button>
+              <button class="btn-terminal btn-sm" id="btnCamTop">TOP</button>
+              <button class="btn-terminal btn-sm" id="btnCamBasket">BASKET</button>
+              <button class="btn-terminal btn-sm active" id="btnToggleAutoRotate">AUTO-ROT</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="canvas-viewport">
+              <canvas id="canvasWireframe3D"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- PANEL 3: Segment Cutout Planner (with Max Size Constraint) -->
+        <section class="terminal-panel panel-cutout">
+          <div class="panel-header">
+            <span>[3] SEGMENT CUTOUT PLANNER // MAX SIZE CONSTRAINED</span>
+            <div class="panel-tools">
+              <button class="btn-terminal btn-sm active" id="btnToggleConstraint">[MAX SIZE: ON]</button>
+              <button class="btn-terminal btn-sm active" id="btnViewPanel">PANEL TEMPLATE</button>
+              <button class="btn-terminal btn-sm" id="btnViewAllPanels">ALL PANELS</button>
+              <button class="btn-terminal btn-sm" id="btnViewGore">FULL GORE</button>
+              <button class="btn-terminal btn-sm" id="btnViewAllGores">ALL GORES</button>
+              <button class="btn-terminal btn-sm" id="btnViewNesting">BOLT NESTING</button>
+              <button class="btn-terminal btn-sm" id="btnDownloadSVG">SVG</button>
+              <button class="btn-terminal btn-sm" id="btnDownloadCSV">CSV</button>
+              <button class="btn-terminal btn-sm" id="btnShowLoftingModal">TABLE</button>
+            </div>
+          </div>
+
+          <!-- Cutout Planner Body: Canvas + Sidebar Tools -->
+          <div class="panel-body">
+            <div class="cutout-layout-wrapper">
+              <!-- Canvas Display -->
+              <div class="cutout-canvas-col">
+                <div class="canvas-viewport">
+                  <canvas id="canvasCutout"></canvas>
+                </div>
+              </div>
+
+              <!-- Sidebar Controls & Geometry Telemetry -->
+              <aside class="cutout-side-tools">
+                <!-- Constraint Alert Box -->
+                <div id="cutoutConstraintAlert" style="display: none;"></div>
+
+                <!-- Max Panel Size Constraint Toggle -->
+                <div class="ctrl-group">
+                  <label>
+                    <span>MAX PANEL SIZE LIMIT:</span>
+                    <span class="ctrl-val" id="lblConstraintState">ENABLED</span>
+                  </label>
+                  <button class="btn-terminal active" id="btnToggleConstraintSide" style="width: 100%; margin-top: 4px;">
+                    [MAX SIZE LIMIT: ENABLED]
+                  </button>
+                </div>
+
+                <!-- Envelope Partition Constraints -->
+                <div class="ctrl-group">
+                  <label>
+                    <span>GORE COUNT (MERIDIANS):</span>
+                    <span class="ctrl-val" id="lblGoreCount">10</span>
+                  </label>
+                  <input type="range" id="inputGoreCount" min="4" max="32" step="1" value="10" />
+                  <div class="range-limits">
+                    <span>4 (MIN)</span>
+                    <span>10 (STD)</span>
+                    <span>32 (MAX)</span>
+                  </div>
+                </div>
+
+                <div class="ctrl-group">
+                  <div class="ctrl-header-flex">
+                    <label for="inputPanelCount" style="margin-bottom: 0;">
+                      <span>PANELS PER GORE (SEGS):</span>
+                      <span class="ctrl-val" id="lblPanelCount">1</span>
+                    </label>
+                    <button type="button" class="btn-terminal btn-sm" id="btnAutoFitPanels" title="Auto-divide gores to satisfy Max Panel Length constraint">AUTO-FIT</button>
+                  </div>
+                  <input type="range" id="inputPanelCount" min="1" max="32" step="1" value="1" />
+                  <div class="range-limits">
+                    <span>1 (MIN)</span>
+                    <span id="lblCurrentPanelLength" style="color: var(--amber-bright); font-weight: bold;">~4.50m (15 ft) / seg</span>
+                    <span>32 (MAX)</span>
+                  </div>
+                </div>
+
+                <div class="ctrl-group">
+                  <label for="inputMaxPanelHeight">
+                    <span>MAX PANEL LENGTH:</span>
+                    <span class="ctrl-val" id="lblMaxPanelHeight">10.00 m (33 ft)</span>
+                  </label>
+                  <input type="range" id="inputMaxPanelHeight" min="0.20" max="10.00" step="0.05" value="10.00" />
+                  <div class="range-limits">
+                    <span>0.20m (8")</span>
+                    <span>1.00m (39" STD)</span>
+                    <span>10.00m (33 ft)</span>
+                  </div>
+                </div>
+
+                <div class="ctrl-group">
+                  <label>
+                    <span>MAX FABRIC BOLT WIDTH:</span>
+                    <span class="ctrl-val" id="lblFabricWidth">1.50 m (59")</span>
+                  </label>
+                  <input type="range" id="inputFabricWidth" min="0.80" max="2.40" step="0.05" value="1.50" />
+                  <div class="range-limits">
+                    <span>0.80m (31")</span>
+                    <span>1.50m (60" STD)</span>
+                    <span>2.40m (94")</span>
+                  </div>
+                </div>
+
+                <div class="ctrl-group">
+                  <label>
+                    <span>SEAM ALLOWANCE:</span>
+                    <span class="ctrl-val" id="lblSeamAllowance">20 mm</span>
+                  </label>
+                  <input type="range" id="inputSeamAllowance" min="10" max="35" step="1" value="20" />
+                </div>
+
+                <!-- Panel Quick Selector Strip -->
+                <div class="panel-selector-container">
+                  <span class="selector-label">SELECT PANEL TO INSPECT / CUT:</span>
+                  <div class="panel-btn-grid" id="panelSelectorList">
+                    <!-- Populated dynamically -->
+                  </div>
+                </div>
+
+                <!-- Selected Panel Specification Box -->
+                <div class="spec-box">
+                  <div class="spec-title">
+                    <span id="cutoutCurPanelName">PANEL #01</span>
+                    <span>CUTTING SPEC</span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-label">TOP WIDTH (CUT):</span>
+                    <span class="spec-value" id="cutoutTopW">0.000 m</span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-label">BOT WIDTH (CUT):</span>
+                    <span class="spec-value" id="cutoutBotW">0.000 m</span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-label">MAX WIDTH:</span>
+                    <span class="spec-value" id="cutoutMaxW">0.000 m</span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-label">ARC HEIGHT:</span>
+                    <span class="spec-value" id="cutoutHeight">0.000 m</span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-label">DIAGONAL (CHECK):</span>
+                    <span class="spec-value" id="cutoutDiag">0.000 m</span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-label">PANEL AREA:</span>
+                    <span class="spec-value" id="cutoutArea">0.00 m²</span>
+                  </div>
+                </div>
+
+                <!-- Fabric Bolt Yardage Summary -->
+                <div class="yardage-box">
+                  <div class="spec-title">
+                    <span>FABRIC PROCUREMENT</span>
+                    <span>ESTIMATE</span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-label">TOTAL PANELS:</span>
+                    <span class="spec-value" id="sumTotalPanels">192 panels</span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-label">ENVELOPE FABRIC:</span>
+                    <span class="spec-value" id="sumFabricArea">0 m²</span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-label">BOLT LENGTH REQ:</span>
+                    <span class="spec-value" id="sumBoltLength">~0 m</span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-label">MAX GORE CUT WIDTH:</span>
+                    <span class="spec-value" id="sumMaxCutW">0.00 m</span>
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </section>
+
+        <!-- PANEL 4: Aerostatic Flight Computer -->
+        <section class="terminal-panel panel-flight">
+          <div class="panel-body" id="flightComputerContainer">
+            <!-- Dynamically populated by FlightUI -->
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- Bottom Telemetry Status Bar -->
+    <footer class="terminal-footer">
+      <div class="footer-left">
+        <span class="footer-item">STATUS: <b>READY // ALL SYSTEMS NOMINAL</b></span>
+        <span class="footer-item">TARGET: <b id="statusActiveGore">GORE #01/16</b></span>
+        <span class="footer-item">CORE: <b>MONOTONE CUBIC SPLINE INTERPOLATOR</b></span>
+      </div>
+      <div class="footer-right">
+        HOT AIR BALLOON ENVELOPE SYNTHESIZER v2.4 // AMBER PHOSPHOR EDITION
+      </div>
+    </footer>
+  </div>
+
+  <!-- Lofting Coordinates Modal Table -->
+  <div class="terminal-modal" id="loftingModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span id="modalLoftingTitle">PANEL LOFTING COORDINATES</span>
+        <button class="btn-terminal btn-sm" id="btnCloseLoftingModal">[CLOSE X]</button>
+      </div>
+      <div class="modal-body">
+        <table class="lofting-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>HT %</th>
+              <th>ARC HT (REL)</th>
+              <th>ARC HT (CUT)</th>
+              <th>HALF-W (CUT)</th>
+              <th>FULL-W (CUT)</th>
+              <th>REGISTRATION</th>
+            </tr>
+          </thead>
+          <tbody id="loftingTableBody">
+            <!-- Populated dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Modules -->
+  <script src="js/balloon-math.js"></script>
+  <script src="js/audio-synth.js"></script>
+  <script src="js/profile-editor.js"></script>
+  <script src="js/wireframe-3d.js"></script>
+  <script src="js/cutout-planner.js"></script>
+  <script src="js/flight-computer.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
