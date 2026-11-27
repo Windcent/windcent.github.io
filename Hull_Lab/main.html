@@ -1,0 +1,2197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2D Flat-Bottom Hull — Planing Transition Visual Aid</title>
+  <!-- Tailwind CSS for responsive layout and dark engineering theme -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Inter for UI and JetBrains Mono for crisp tabular engineering telemetry -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    /* Custom subtle range slider styling for crisp black & gold instrument feel */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 9999px;
+      background: #14120e;
+      border: 1px solid #3f3218;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 9999px;
+      background: #eab308;
+      border: 2px solid #09090b;
+      margin-top: -7px;
+      box-shadow: 0 0 12px rgba(234, 179, 8, 0.55);
+      transition: transform 0.12s ease, background-color 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.12);
+      background: #facc15;
+    }
+    input[type="range"]::-moz-range-track {
+      height: 6px;
+      border-radius: 9999px;
+      background: #14120e;
+      border: 1px solid #3f3218;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 9999px;
+      background: #eab308;
+      border: 2px solid #09090b;
+      box-shadow: 0 0 12px rgba(234, 179, 8, 0.55);
+    }
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body class="bg-[#050506] text-stone-100 font-sans antialiased h-screen w-screen overflow-hidden flex flex-row selection:bg-amber-500/30">
+
+  <!-- Full-Viewport 2D Simulation Canvas -->
+  <main class="relative flex-1 min-w-0 h-full bg-[#050506]">
+    <canvas id="simCanvas" class="block w-full h-full"></canvas>
+
+    <!-- Minimal Hydrodynamic Regime, Froude, Reynolds & Drag Indicator + Notes -->
+    <div class="pointer-events-none absolute top-4 left-4 flex flex-col gap-2 max-w-xs sm:max-w-sm">
+      <div class="flex flex-wrap items-center gap-2">
+        <span id="regimeBadge" class="px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase border bg-black/80 backdrop-blur-sm text-amber-200 border-amber-400/35">
+          Displacement
+        </span>
+        <span class="px-2.5 py-1 rounded-full text-[11px] font-mono bg-black/75 border border-zinc-800 text-stone-400 tabular-nums">
+          Fr <span id="hudFroude" class="text-amber-300">0.00</span>
+        </span>
+        <span class="px-2.5 py-1 rounded-full text-[11px] font-mono bg-black/75 border border-zinc-800 text-stone-400 tabular-nums">
+          Re <span id="hudReynolds" class="text-amber-300">0</span>
+        </span>
+        <span class="px-2.5 py-1 rounded-full text-[11px] font-mono bg-black/75 border border-zinc-800 text-stone-400 tabular-nums">
+          Drag <span id="hudDrag" class="text-amber-200">0.00</span>
+        </span>
+      </div>
+
+      <!-- Static (B) vs Dynamic (L) Lift Ratio Bar -->
+      <div class="bg-black/75 backdrop-blur-sm border border-amber-500/20 rounded-xl px-3 py-1.5 flex flex-col gap-1">
+        <div class="flex items-center justify-between text-[10px] font-mono">
+          <span class="text-[#fef3c7]">Static B</span>
+          <span class="text-[#fde047]">Dynamic L</span>
+        </div>
+        <div class="h-1.5 w-full rounded-full overflow-hidden flex bg-zinc-900 border border-zinc-800">
+          <div id="barStatic" style="width: 100%" class="bg-[#fef3c7] transition-all duration-100"></div>
+          <div id="barDynamic" style="width: 0%" class="bg-[#fbbf24] transition-all duration-100"></div>
+        </div>
+      </div>
+
+      <ul id="regimeNotes" class="bg-black/75 backdrop-blur-sm border border-amber-500/20 rounded-xl px-3 py-2 text-[11px] leading-snug text-stone-300 space-y-1 list-disc list-inside marker:text-amber-400">
+        <li>Hydrostatic buoyancy supports nearly all hull weight</li>
+        <li>Full keel remains wetted; CP stays close to CG</li>
+        <li>Low wave-making drag and minimal bow-up trim</li>
+      </ul>
+    </div>
+
+    <!-- Compact Force Vector Legend (Bottom-Left) -->
+    <div id="forceLegend" class="pointer-events-none absolute bottom-4 left-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-mono bg-black/75 backdrop-blur-sm border border-amber-500/20 rounded-xl px-3 py-1.5 text-stone-300">
+      <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#fef3c7]"></span><strong class="text-[#fef3c7]">B</strong> Buoyancy</span>
+      <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#fbbf24]"></span><strong class="text-[#fde047]">L</strong> Lift</span>
+      <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#f87171]"></span><strong class="text-[#fca5a5]">D</strong> Drag</span>
+      <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#facc15]"></span><strong class="text-[#fde047]">T</strong> Thrust</span>
+      <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#fb923c]"></span><strong class="text-[#fdba74]">F</strong> Total</span>
+    </div>
+  </main>
+
+  <!-- Minimal Black & Gold Vertical Speed Side Pane -->
+  <aside class="w-44 sm:w-48 flex-shrink-0 h-full border-l border-amber-500/20 bg-[#0a0908]/95 backdrop-blur-md px-3 py-3.5 flex flex-col gap-3 select-none">
+    <!-- Hull Type Selector (Planing Hull / Trawler) -->
+    <div class="grid grid-cols-2 gap-1 p-0.5 rounded-lg bg-[#050506] border border-amber-500/20">
+      <button id="btnHullSkiff" type="button" class="py-1 px-1 rounded-md font-mono text-[10px] leading-tight font-semibold bg-amber-400 text-black transition">
+        Planing<br />Hull
+      </button>
+      <button id="btnHullTrawler" type="button" class="py-1 px-1 rounded-md font-mono text-[10px] leading-tight font-medium text-stone-400 hover:text-amber-200 transition">
+        Trawler
+      </button>
+    </div>
+
+    <!-- Live Speed & Trim Readout (Unitless) -->
+    <div class="font-mono text-xs sm:text-sm font-semibold text-amber-300 tabular-nums text-center border-b border-amber-500/15 pb-2">
+      V <span id="hudSpeed">0.0</span> · θ <span id="hudTrim">0.0</span>
+    </div>
+
+    <!-- Vertical Speed Bar, Regime Scale & Clickable POI Markers -->
+    <div class="flex-1 min-h-0 flex items-stretch gap-2.5 py-2 px-1">
+      <!-- Vertical Hydrodynamic Regime Scale Bar (rescaled dynamically per hull) -->
+      <div id="regimeScaleBar" class="w-1.5 h-full rounded-full overflow-hidden flex flex-col-reverse bg-zinc-900/90 border border-zinc-800/80 flex-shrink-0"></div>
+
+      <!-- Interactive Vertical Speed Track -->
+      <div
+        id="speedTrack"
+        role="slider"
+        tabindex="0"
+        aria-label="Boat Speed"
+        aria-valuemin="0"
+        aria-valuemax="28"
+        aria-valuenow="0"
+        class="relative w-5 h-full flex justify-center cursor-ns-resize touch-none flex-shrink-0"
+      >
+        <div class="w-1.5 h-full rounded-full bg-[#14120e] border border-[#3f3218]"></div>
+        <div id="speedFill" style="height: 0%" class="pointer-events-none absolute bottom-0 w-1.5 rounded-full bg-gradient-to-t from-amber-600 to-yellow-400"></div>
+        <div id="speedThumb" style="bottom: 0%" class="pointer-events-none absolute left-1/2 -translate-x-1/2 translate-y-1/2 w-[18px] h-[18px] rounded-full bg-[#eab308] border-2 border-[#09090b] shadow-[0_0_12px_rgba(234,179,8,0.65)]"></div>
+      </div>
+
+      <!-- Clickable Points-of-Interest Speed Markers (rebuilt dynamically per hull) -->
+      <div id="poiMarkers" class="relative flex-1 h-full"></div>
+    </div>
+
+    <!-- CG Position, Vector Visibility Toggle & Playback Controls -->
+    <div class="flex flex-col gap-2 pt-2 border-t border-amber-500/15">
+      <!-- Unitless CG Longitudinal Position Slider -->
+      <div class="flex flex-col gap-1 px-1">
+        <div class="flex items-center justify-between text-[11px] font-mono">
+          <label for="cgSlider" class="text-stone-400">CG</label>
+          <span id="hudCG" class="text-amber-300 tabular-nums">0.37</span>
+        </div>
+        <input
+          id="cgSlider"
+          type="range"
+          min="0.30"
+          max="0.50"
+          step="0.005"
+          value="0.37"
+          aria-label="Center of Gravity Position"
+          class="w-full"
+        />
+        <div class="flex justify-between text-[9px] font-mono text-stone-500">
+          <span>Aft</span>
+          <span>Fwd</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-1.5">
+        <label class="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#070708] border border-amber-500/20 cursor-pointer hover:border-amber-500/45 transition">
+          <span class="text-[10px] font-mono text-stone-300">Vectors</span>
+          <input id="toggleVectors" type="checkbox" checked class="w-3.5 h-3.5 accent-amber-400 cursor-pointer" />
+        </label>
+        <label class="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#070708] border border-amber-500/20 cursor-pointer hover:border-amber-500/45 transition">
+          <span class="text-[10px] font-mono text-stone-300">CG Sweep</span>
+          <input id="toggleCGSweep" type="checkbox" class="w-3.5 h-3.5 accent-amber-400 cursor-pointer" />
+        </label>
+      </div>
+
+      <div class="grid grid-cols-3 gap-1">
+        <button
+          id="btnPause"
+          type="button"
+          class="flex items-center justify-center py-2 px-1.5 rounded-lg font-medium text-[11px] bg-zinc-900 hover:bg-zinc-800 active:scale-[0.98] text-amber-200 border border-amber-500/30 transition"
+        >
+          Pause
+        </button>
+
+        <button
+          id="btnRamp"
+          type="button"
+          class="flex items-center justify-center gap-1 py-2 px-1.5 rounded-lg font-semibold text-[11px] bg-gradient-to-b from-amber-400 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 active:scale-[0.98] text-black transition"
+        >
+          <svg id="iconPlay" class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+          <svg id="iconPause" class="w-3 h-3 hidden" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M6 5h4v14H6zm8 0h4v14h-4z" />
+          </svg>
+          <span id="btnRampText">Ramp</span>
+        </button>
+
+        <button
+          id="btnReset"
+          type="button"
+          class="py-2 px-1.5 rounded-lg font-medium text-[11px] bg-zinc-900 hover:bg-zinc-800 active:scale-[0.98] text-amber-100 border border-amber-500/25 transition"
+        >
+          Reset
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ===================================================================== -->
+  <!-- MODULAR HYDRODYNAMIC PHYSICS & CANVAS VISUALIZATION ENGINE            -->
+  <!-- ===================================================================== -->
+  <script>
+    'use strict';
+
+    // =========================================================================
+    // 1. PHYSICAL & HULL CONFIGURATION CONSTANTS (SI UNITS: m, kg, s, N)
+    // =========================================================================
+    const KNOTS_TO_MS = 0.514444;
+    const G = 9.81;
+    const RHO = 1025.0; // Seawater density (kg/m^3)
+    const NU = 1.19e-6; // Seawater kinematic viscosity at ~15°C (m^2/s)
+
+    const HULL_PROFILES = {
+      skiff: {
+        type: 'skiff',
+        length: 5.0,            // Total hull length L (m)
+        flatEnd: 3.90,          // End of flat bottom keel (78% of L); forward 22% is bow rake
+        bowHeight: 0.44,        // Vertical rise of bow rake tip above flat keel (m)
+        bowExponent: 2.15,      // Smooth tangent transition from flat keel to bow rake
+        transomHeight: 0.62,    // Stern sheer height above flat keel (m)
+        bowSheerHeight: 0.80,   // Bow sheer height above flat keel (m)
+        beamFlat: 1.45,         // Effective chine beam along flat bottom (m)
+        beamBowTip: 0.90,       // Tapered chine beam at bow tip (m)
+        mass: 1150.0,           // Total displacement mass (kg)
+        Iyy: 1880.0,            // Pitch moment of inertia (kg*m^2)
+        zCG: 0.36,              // Vertical CG above flat keel (m)
+        numPanels: 44,
+        planingFactor: 1.0,     // Full flat-bottom dynamic planing efficiency
+        ventScale: 1.0,         // Sharp transom clean ventilation
+        waveDragScale: 1.0,
+        maxTrimRad: (10 * Math.PI) / 180,
+        maxSpeedKn: 28.0,
+        rampRate: 1.65,
+        pois: [
+          { kn: 23.0, label: 'Plane', textCls: 'text-yellow-300/90 hover:text-yellow-200', tickCls: 'bg-yellow-300' },
+          { kn: 14.0, label: 'Semi', textCls: 'text-stone-400 hover:text-amber-300', tickCls: 'bg-amber-400/70' },
+          { kn: 8.2, label: 'Hump', textCls: 'text-amber-400 hover:text-yellow-300', tickCls: 'bg-amber-400' },
+          { kn: 5.0, label: 'Displacement', textCls: 'text-stone-400 hover:text-amber-300', tickCls: 'bg-amber-500/60' },
+          { kn: 0.0, label: 'Rest', textCls: 'text-stone-400 hover:text-amber-300', tickCls: 'bg-amber-500/50' },
+        ],
+      },
+      trawler: {
+        type: 'trawler',
+        length: 5.0,
+        flatEnd: 3.35,
+        bowHeight: 0.54,
+        bowExponent: 2.0,
+        transomHeight: 0.78,    // Higher stern sheer
+        bowSheerHeight: 1.12,   // Classic tall trawler bow sheer
+        beamFlat: 1.68,         // Full displacement beam
+        beamBowTip: 0.72,
+        mass: 1780.0,           // Heavy full-displacement mass (kg)
+        Iyy: 2950.0,
+        zCG: 0.44,
+        numPanels: 44,
+        planingFactor: 0.16,    // Round-bilge rockered hull resists planing
+        ventScale: 0.22,        // Tucked stern stays mostly wet
+        waveDragScale: 2.25,    // Steep displacement hull-speed wave resistance
+        maxTrimRad: (8 * Math.PI) / 180,
+        maxSpeedKn: 12.0,       // Scaled displacement trawler speed envelope
+        rampRate: 0.85,
+        pois: [
+          { kn: 11.2, label: 'Semi', textCls: 'text-amber-300 hover:text-yellow-200', tickCls: 'bg-amber-300' },
+          { kn: 8.2, label: 'Hump', textCls: 'text-amber-400 hover:text-yellow-300', tickCls: 'bg-amber-400' },
+          { kn: 5.5, label: 'Displacement', textCls: 'text-stone-300 hover:text-amber-300', tickCls: 'bg-amber-500/70' },
+          { kn: 3.5, label: 'Cruise', textCls: 'text-stone-400 hover:text-amber-300', tickCls: 'bg-amber-500/55' },
+          { kn: 0.0, label: 'Rest', textCls: 'text-stone-400 hover:text-amber-300', tickCls: 'bg-amber-500/50' },
+        ],
+      },
+    };
+
+    const HULL = { ...HULL_PROFILES.skiff };
+    HULL.weight = HULL.mass * G;
+
+    // World coordinate bounds for the 1D water grid (boat midship sits at X = 0)
+    const WORLD = {
+      xMin: -7.5,
+      xMax: 8.5,
+      gridN: 240,
+      waveSpeed: 3.85,        // Intrinsic 1D wave phase speed (m/s), sets hump resonance near Fr ~ 0.55
+    };
+    WORLD.dx = (WORLD.xMax - WORLD.xMin) / (WORLD.gridN - 1);
+
+    // =========================================================================
+    // 2. HULL GEOMETRY & PANEL BUILDER
+    // =========================================================================
+
+    /**
+     * Returns keel elevation z_l(x_l) in boat-local frame (x_l=0 transom, x_l=L bow).
+     */
+    function keelZ(x) {
+      if (HULL.type === 'trawler') {
+        // Classic trawler rockered keel: gentle aft run up to tucked stern + deep forefoot + curved bow
+        if (x < 1.35) {
+          const u = (1.35 - x) / 1.35;
+          return 0.20 * Math.pow(u, 1.85);
+        }
+        if (x <= HULL.flatEnd) return 0.0;
+        const u = Math.min(1, (x - HULL.flatEnd) / (HULL.length - HULL.flatEnd));
+        return HULL.bowHeight * Math.pow(u, HULL.bowExponent);
+      }
+      if (x <= HULL.flatEnd) return 0.0;
+      const u = Math.min(1, (x - HULL.flatEnd) / (HULL.length - HULL.flatEnd));
+      return HULL.bowHeight * Math.pow(u, HULL.bowExponent);
+    }
+
+    /**
+     * Returns local chine beam width B(x_l) for 2D->3D force scaling.
+     */
+    function hullBeam(x) {
+      if (HULL.type === 'trawler') {
+        // Tapered displacement waterlines fore and aft
+        const uMid = Math.abs(x / HULL.length - 0.45) / 0.55;
+        return HULL.beamFlat - (HULL.beamFlat - HULL.beamBowTip) * Math.pow(Math.min(1, uMid), 1.8);
+      }
+      if (x <= HULL.flatEnd) return HULL.beamFlat;
+      const u = Math.min(1, (x - HULL.flatEnd) / (HULL.length - HULL.flatEnd));
+      return HULL.beamFlat - (HULL.beamFlat - HULL.beamBowTip) * Math.pow(u, 1.5);
+    }
+
+    /**
+     * Returns gunwale / sheer line height z_sheer(x_l) for visual profile rendering.
+     */
+    function sheerZ(x) {
+      const u = x / HULL.length;
+      if (HULL.type === 'trawler') {
+        // Pronounced trawler sheer dipping slightly aft of midships then rising boldly at the bow
+        const dip = -0.06 * Math.sin(Math.PI * Math.min(1, u * 1.4));
+        return HULL.transomHeight + (HULL.bowSheerHeight - HULL.transomHeight) * Math.pow(u, 1.95) + dip;
+      }
+      return HULL.transomHeight + (HULL.bowSheerHeight - HULL.transomHeight) * Math.pow(u, 1.65);
+    }
+
+    /**
+     * Precomputes the 44 discretized bottom panels along the keel + bow rake.
+     */
+    function buildHullPanels() {
+      const panels = [];
+      const dxLocal = HULL.length / HULL.numPanels;
+      for (let i = 0; i < HULL.numPanels; i++) {
+        const x0 = i * dxLocal;
+        const x1 = (i + 1) * dxLocal;
+        const z0 = keelZ(x0);
+        const z1 = keelZ(x1);
+        const xm = 0.5 * (x0 + x1);
+        const zm = 0.5 * (z0 + z1);
+        const dxl = x1 - x0;
+        const dzl = z1 - z0;
+        const ds = Math.hypot(dxl, dzl);
+        const slopeAngle = Math.atan2(dzl, dxl); // 0 on flat keel, positive on bow rake
+        panels.push({
+          idx: i,
+          x0, z0, x1, z1,
+          xm, zm,
+          ds,
+          slopeAngle,
+          beam: hullBeam(xm),
+        });
+      }
+      return panels;
+    }
+
+    let HULL_PANELS = buildHullPanels();
+
+    /**
+     * Transforms a boat-local point (xl, zl) to world coordinates (X, Z)
+     * given current rigid body state (zCG_world, theta) and LCG fraction.
+     * Note: Positive theta = bow UP (counterclockwise in X-right, Z-up frame).
+     */
+    function localToWorld(xl, zl, zCGWorld, theta, lcgFrac) {
+      const xCGLocal = lcgFrac * HULL.length;
+      const xCGWorld = xCGLocal - 0.5 * HULL.length; // Keep hull centered horizontally
+      const dx = xl - xCGLocal;
+      const dz = zl - HULL.zCG;
+      const c = Math.cos(theta);
+      const s = Math.sin(theta);
+      return {
+        x: xCGWorld + dx * c - dz * s,
+        z: zCGWorld + dx * s + dz * c,
+      };
+    }
+
+    // =========================================================================
+    // 3. QUASI-STEADY HUMP WAVE + 1D COUPLED DYNAMIC WATER SURFACE SOLVER
+    // =========================================================================
+
+    /**
+     * Computes the Kelvin-like transverse bow-crest / stern-trough wave profile
+     * during the hump transition (Fr_L ~ 0.40 - 0.72), which naturally flattens
+     * as the hull climbs over its bow wave into supercritical planing.
+     */
+    function sampleHumpWave(worldX, speedMs) {
+      const Fr = speedMs / Math.sqrt(G * HULL.length);
+      if (Fr < 0.15) return { eta: 0, slope: 0 };
+
+      // Resonant hump envelope peaking near Fr_L = 0.56
+      const humpEnv = Math.exp(-Math.pow((Fr - 0.56) / 0.16, 2));
+      if (humpEnv < 0.002) return { eta: 0, slope: 0 };
+
+      // Transverse wave wavelength lambda = 2 * pi * U^2 / g, bounded for smoothness
+      const lambda = Math.max(2.6, Math.min(13.5, (2 * Math.PI * speedMs * speedMs) / G));
+      const k = (2 * Math.PI) / lambda;
+
+      // Bow wave crest forms just aft of the bow stem (worldX ~ +1.7 m)
+      const xCrest = 1.65;
+      const dist = worldX - xCrest;
+
+      // Wave decays ahead of the bow crest and gently aft into the wake
+      let spatialEnv;
+      if (dist > 0) {
+        spatialEnv = Math.exp(-Math.pow(dist / 1.15, 2));
+      } else {
+        spatialEnv = Math.exp(dist / 7.5);
+      }
+
+      const amp = 0.175 * humpEnv;
+      const phase = k * dist;
+      const eta = amp * spatialEnv * Math.cos(phase);
+
+      // Analytical derivative d(eta)/dx for accurate local wave slope
+      let dEnv;
+      if (dist > 0) {
+        dEnv = spatialEnv * (-2 * dist / (1.15 * 1.15));
+      } else {
+        dEnv = spatialEnv / 7.5;
+      }
+      const slope = amp * (dEnv * Math.cos(phase) - spatialEnv * k * Math.sin(phase));
+      return { eta, slope };
+    }
+
+    /**
+     * 1D Dynamic Water Surface Field solving an advected, damped 1D wave equation
+     * coupled to submerged hull pressure impulses + incoming surface chop.
+     */
+    class WaveField {
+      constructor() {
+        this.n = WORLD.gridN;
+        this.eta = new Float64Array(this.n);      // Dynamic wave elevation (m)
+        this.vel = new Float64Array(this.n);      // Vertical surface velocity (m/s)
+        this.etaNext = new Float64Array(this.n);
+        this.velNext = new Float64Array(this.n);
+        this.pressure = new Float64Array(this.n); // Hull downward impulse accumulator
+        this.time = 0;
+        this.flowOffset = 0;                      // Tracks water texture scroll distance
+      }
+
+      reset() {
+        this.eta.fill(0);
+        this.vel.fill(0);
+        this.pressure.fill(0);
+        this.time = 0;
+      }
+
+      clearPressure() {
+        this.pressure.fill(0);
+      }
+
+      /**
+       * Adds a localized downward hull displacement/pressure impulse at worldX.
+       */
+      addHullImpulse(worldX, strength) {
+        const fIdx = (worldX - WORLD.xMin) / WORLD.dx;
+        const i0 = Math.floor(fIdx);
+        if (i0 < 1 || i0 >= this.n - 2) return;
+        const frac = fIdx - i0;
+        this.pressure[i0] += strength * (1 - frac);
+        this.pressure[i0 + 1] += strength * frac;
+      }
+
+      /**
+       * Samples total water height (dynamic 1D PDE + quasi-steady hump wave),
+       * surface slope d(eta)/dx, and vertical surface velocity at any worldX.
+       */
+      sample(worldX, speedMs) {
+        const fIdx = (worldX - WORLD.xMin) / WORLD.dx;
+        const clamped = Math.max(1, Math.min(this.n - 2.001, fIdx));
+        const i0 = Math.floor(clamped);
+        const t = clamped - i0;
+
+        const etaDyn = this.eta[i0] * (1 - t) + this.eta[i0 + 1] * t;
+        const velDyn = this.vel[i0] * (1 - t) + this.vel[i0 + 1] * t;
+        const slopeDyn = (this.eta[i0 + 1] - this.eta[i0 - 1]) / (2 * WORLD.dx);
+
+        const hump = sampleHumpWave(worldX, speedMs);
+        return {
+          eta: etaDyn + hump.eta,
+          slope: slopeDyn + hump.slope,
+          vel: velDyn,
+        };
+      }
+
+      /**
+       * Advances the 1D wave PDE by dt with semi-Lagrangian right-to-left advection.
+       */
+      step(dt, speedMs, chopAmp) {
+        this.time += dt;
+        this.flowOffset += speedMs * dt;
+
+        const n = this.n;
+        const dx = WORLD.dx;
+        const c2 = WORLD.waveSpeed * WORLD.waveSpeed;
+        const invDx2 = 1.0 / (dx * dx);
+
+        // 1. Semi-Lagrangian advection right-to-left at boat speed U
+        // At high speed this naturally sweeps hull wakes and rooster tails aft!
+        const shiftNodes = (speedMs * dt) / dx;
+        for (let i = 0; i < n; i++) {
+          const src = i + shiftNodes;
+          if (src >= n - 1) {
+            this.etaNext[i] = 0;
+            this.velNext[i] = 0;
+          } else {
+            const j = Math.floor(src);
+            const f = src - j;
+            this.etaNext[i] = this.eta[j] * (1 - f) + this.eta[j + 1] * f;
+            this.velNext[i] = this.vel[j] * (1 - f) + this.vel[j + 1] * f;
+          }
+        }
+
+        // 2. Inject incoming multi-harmonic surface chop at the right inflow boundary
+        let chopVal = 0;
+        let chopVel = 0;
+        if (chopAmp > 0.0005) {
+          const t = this.time;
+          // Encounter frequency scales slightly with boat speed for realistic chop feel
+          const w1 = 2.6 + 0.55 * speedMs;
+          const w2 = 4.3 + 0.92 * speedMs;
+          const w3 = 6.9 + 1.35 * speedMs;
+          chopVal = chopAmp * (
+            0.60 * Math.sin(w1 * t) +
+            0.28 * Math.sin(w2 * t + 1.4) +
+            0.12 * Math.sin(w3 * t + 2.7)
+          );
+          chopVel = chopAmp * (
+            0.60 * w1 * Math.cos(w1 * t) +
+            0.28 * w2 * Math.cos(w2 * t + 1.4) +
+            0.12 * w3 * Math.cos(w3 * t + 2.7)
+          );
+        }
+
+        // Blend boundary nodes smoothly so inflow never creates step artifacts
+        const inflowWidth = 6;
+        for (let k = 0; k < inflowWidth; k++) {
+          const idx = n - 1 - k;
+          const blend = 1 - k / inflowWidth;
+          this.etaNext[idx] = this.etaNext[idx] * (1 - blend) + chopVal * blend;
+          this.velNext[idx] = this.velNext[idx] * (1 - blend) + chopVel * blend;
+        }
+
+        // 3. Integrate 1D damped restoring wave equation + hull pressure coupling
+        const damping = 1.65;
+        const restoring = 3.2; // Gravity restoring term keeping mean level at 0
+        for (let i = 1; i < n - 1; i++) {
+          const laplacian = (this.etaNext[i - 1] - 2 * this.etaNext[i] + this.etaNext[i + 1]) * invDx2;
+
+          // Sponge damping near left outflow boundary to prevent wave reflections
+          let sponge = 0;
+          if (i < 18) {
+            const s = (18 - i) / 18;
+            sponge = 9.0 * s * s;
+          }
+
+          const accel =
+            c2 * laplacian
+            - restoring * this.etaNext[i]
+            - (damping + sponge) * this.velNext[i]
+            - this.pressure[i];
+
+          let vNew = this.velNext[i] + accel * dt;
+          let eNew = this.etaNext[i] + vNew * dt;
+
+          // Soft clamp for rock-solid numerical stability under extreme impulses
+          if (eNew > 0.42) { eNew = 0.42; vNew *= 0.5; }
+          if (eNew < -0.42) { eNew = -0.42; vNew *= 0.5; }
+
+          this.vel[i] = vNew;
+          this.eta[i] = eNew;
+        }
+
+        this.eta[0] = this.eta[1] * 0.9;
+        this.vel[0] = this.vel[1] * 0.9;
+        this.eta[n - 1] = chopVal;
+        this.vel[n - 1] = chopVel;
+      }
+    }
+
+    // =========================================================================
+    // 4. CORE 2-DOF PANEL HYDRODYNAMIC FORCE SOLVER
+    // =========================================================================
+
+    /**
+     * Evaluates hydrostatic buoyancy, Savitsky-inspired planing lift, damping,
+     * propulsion thrust torque, and wetted geometry across all 44 hull panels.
+     *
+     * Used BOTH by the real-time simulation loop (with live waveField) and by
+     * the fast steady-state envelope pre-calculator (waveField = null).
+     */
+    function evaluateHullForces(state, speedMs, lcgFrac, waveField, applyWaveCoupling, accelX = 0) {
+      const { zCG, vz, theta, omega } = state;
+      const xCGLocal = lcgFrac * HULL.length;
+      const xCGWorld = xCGLocal - 0.5 * HULL.length;
+      const Fr = speedMs / Math.sqrt(G * HULL.length);
+      const qDyn = 0.5 * RHO * speedMs * speedMs;
+
+      const c = Math.cos(theta);
+      const s = Math.sin(theta);
+
+      // Step 1: Compute world kinematics & submergence for every bottom panel
+      const pData = new Array(HULL_PANELS.length);
+      let firstWettedIdx = -1;
+      let lastWettedIdx = -1;
+
+      for (let i = 0; i < HULL_PANELS.length; i++) {
+        const p = HULL_PANELS[i];
+        const dx = p.xm - xCGLocal;
+        const dz = p.zm - HULL.zCG;
+
+        const wx = xCGWorld + dx * c - dz * s;
+        const wz = zCG + dx * s + dz * c;
+        const vzPanel = vz + omega * (dx * c - dz * s);
+
+        const water = waveField
+          ? waveField.sample(wx, speedMs)
+          : { ...sampleHumpWave(wx, speedMs), vel: 0 };
+
+        const depth = water.eta - wz;
+        const wetted = depth > 0;
+
+        if (wetted) {
+          if (firstWettedIdx === -1) firstWettedIdx = i;
+          lastWettedIdx = i;
+        }
+
+        pData[i] = {
+          p, wx, wz, vzPanel,
+          waterEta: water.eta,
+          waterSlope: water.slope,
+          waterVel: water.vel,
+          depth,
+          wetted,
+        };
+      }
+
+      // Step 2: Locate exact leading wetted edge (stagnation point) via interpolation
+      let wettedLength = 0;
+      let xStagLocal = 0;
+      let stagWorld = null;
+      const transomWorld = localToWorld(0, keelZ(0), zCG, theta, lcgFrac);
+
+      if (lastWettedIdx !== -1) {
+        const dLast = pData[lastWettedIdx];
+        if (lastWettedIdx < HULL_PANELS.length - 1) {
+          const dNext = pData[lastWettedIdx + 1];
+          // Linear interpolation of exact zero-depth crossing between last wet & first dry panel
+          const denom = dLast.depth - dNext.depth;
+          const frac = denom > 1e-6 ? Math.max(0, Math.min(1, dLast.depth / denom)) : 0.5;
+          xStagLocal = dLast.p.xm + frac * (dNext.p.xm - dLast.p.xm);
+          stagWorld = {
+            x: dLast.wx + frac * (dNext.wx - dLast.wx),
+            z: dLast.wz + frac * (dNext.wz - dLast.wz),
+          };
+        } else {
+          xStagLocal = HULL.length;
+          stagWorld = localToWorld(HULL.length, keelZ(HULL.length), zCG, theta, lcgFrac);
+        }
+        const xStartLocal = firstWettedIdx > 0 ? pData[firstWettedIdx].p.x0 : 0;
+        wettedLength = Math.max(0.05, xStagLocal - xStartLocal);
+      }
+
+      // Step 3: Integrate panel forces (Buoyancy, Planing Lift, Damping)
+      let fBuoyTotal = 0;
+      let tauBuoyTotal = 0;
+      let xBuoyMomentSum = 0;
+
+      let fLiftTotal = 0;
+      let tauLiftTotal = 0;
+      let xLiftMomentSum = 0;
+      let xCPLocalMomentSum = 0;
+
+      let fDampTotal = 0;
+      let tauDampTotal = 0;
+
+      // Transom ventilation factor: once speed clears the sharp transom (Fr > 0.30),
+      // atmospheric pressure at the transom relieves aft hydrostatic head.
+      const ventFactor = Math.max(0, Math.min(1, (Fr - 0.28) / 0.62)) * HULL.ventScale;
+
+      // Aspect ratio correction from Savitsky's flat-plate planing theory
+      const lambdaAR = Math.max(0.45, wettedLength / HULL.beamFlat);
+      const savitskyARFactor = 1.38 / Math.sqrt(lambdaAR);
+
+      // As speed increases into planing, stagnation pressure concentrates sharper
+      // near the leading wetted edge (center of pressure moves toward ~0.82-0.86 of Lw)
+      const planingBlend = Math.max(0, Math.min(1, (Fr - 0.45) / 0.85));
+      const pressureExp = 2.6 + 2.0 * planingBlend; // Integral weight = (p+1)*xi^p
+
+      for (let i = 0; i < HULL_PANELS.length; i++) {
+        const d = pData[i];
+        if (!d.wetted) continue;
+
+        const panelAngle = theta + d.p.slopeAngle;
+        const dxHoriz = d.p.ds * Math.max(0.15, Math.cos(panelAngle));
+        const leverX = d.wx - xCGWorld;
+
+        // Normalized position along wetted length: 0 at transom, 1 at stagnation edge
+        const xi = wettedLength > 0.05
+          ? Math.max(0, Math.min(1, d.p.xm / Math.max(0.15, xStagLocal)))
+          : 0.5;
+
+        // --- (A) Hydrostatic Buoyancy ---
+        // Relieved near transom at supercritical speed due to clean transom ventilation
+        const buoyRelief = 1.0 - 0.58 * ventFactor * Math.pow(1.0 - xi, 0.75);
+        const fBuoy = RHO * G * d.depth * d.p.beam * dxHoriz * buoyRelief;
+        fBuoyTotal += fBuoy;
+        tauBuoyTotal += leverX * fBuoy;
+        xBuoyMomentSum += d.wx * fBuoy;
+        xCPLocalMomentSum += d.p.xm * fBuoy;
+
+        // --- (B) Hydrodynamic Planing Lift (Savitsky flat-plate inspired) ---
+        // Effective angle of attack relative to local dynamic wave slope & vertical motion
+        const waveAngle = Math.atan(d.waterSlope);
+        const relVz = d.vzPanel - d.waterVel;
+        const alphaEff = panelAngle - waveAngle - relVz / (speedMs + 2.2);
+
+        if (alphaEff > 0.001 && speedMs > 0.2) {
+          // 3D bow-rake relief prevents unrealistic pressure spikes on steep bow panels
+          const bowRelief = Math.pow(Math.cos(d.p.slopeAngle), 2.2);
+          // Stagnation-weighted distribution along wetted length (0 at transom, peak at xi=1)
+          const distWeight = (pressureExp + 1.0) * Math.pow(xi, pressureExp);
+          // Smooth lift coefficient proportional to alpha^1.08 (scaled by hull planing efficiency)
+          const clLocal = savitskyARFactor * Math.pow(Math.sin(Math.min(0.65, alphaEff)), 1.08) * bowRelief * HULL.planingFactor;
+          // Submergence ramp ensures gentle panel entry without jitter
+          const entryRamp = Math.min(1.0, d.depth / 0.025);
+
+          const fLift = qDyn * d.p.beam * dxHoriz * clLocal * distWeight * entryRamp;
+          fLiftTotal += fLift;
+          tauLiftTotal += leverX * fLift;
+          xLiftMomentSum += d.wx * fLift;
+          xCPLocalMomentSum += d.p.xm * fLift;
+        }
+
+        // --- (C) Hydrodynamic Heave/Pitch Radiation & Added-Mass Damping ---
+        const dampCoeff = 1450.0 * (1.0 + 0.42 * speedMs);
+        const fDamp = -dampCoeff * d.p.beam * dxHoriz * relVz;
+        fDampTotal += fDamp;
+        tauDampTotal += leverX * fDamp;
+
+        // --- (D) Two-Way Hull-to-Water Coupling ---
+        // Submerged hull presses down on the 1D wave grid, carving a transom wake trough
+        // and pushing a local bow pile-up right ahead of the stagnation point!
+        if (applyWaveCoupling && waveField) {
+          const downPush = (2.8 * d.depth + 0.55 * Math.max(0, -relVz)) * (0.4 + 0.55 * speedMs);
+          waveField.addHullImpulse(d.wx, downPush);
+        }
+      }
+
+      // Add a localized upward spray/bow-wave pile-up just ahead of the stagnation point
+      if (applyWaveCoupling && waveField && stagWorld && speedMs > 1.0) {
+        const pileUp = -0.35 * Math.min(6.0, speedMs) * (0.5 + 0.5 * Math.sin(Math.max(0, theta) * 4));
+        waveField.addHullImpulse(stagWorld.x + 0.22, pileUp);
+      }
+
+      // Step 4: Realistic Outboard Thrust Moment & High-Speed Ground-Effect Bow Lift
+      // Total drag = induced pressure drag + wave-making hump drag + viscous skin friction
+      const inducedDrag = fLiftTotal * Math.tan(Math.max(0, theta));
+      const skinDrag = qDyn * 0.0036 * HULL.beamFlat * wettedLength;
+      const baseHumpDrag = HULL.weight * 0.14 * Math.exp(-Math.pow((Fr - 0.56) / 0.17, 2));
+      // Displacement trawler hits a steep wave-making resistance wall above hull speed (Fr > 0.42)
+      const dispWallDrag = HULL.type === 'trawler'
+        ? HULL.weight * 0.18 * Math.pow(Math.max(0, Fr - 0.38), 1.65)
+        : 0;
+      const humpDrag = baseHumpDrag * HULL.waveDragScale + dispWallDrag;
+      const totalDrag = inducedDrag + skinDrag + humpDrag;
+
+      // Dynamic propulsion thrust along hull axis: balances drag at steady speed and
+      // increases/decreases during acceleration/deceleration (T*cos(theta) = D + m*ax)
+      const cosT = Math.max(0.5, Math.cos(theta));
+      const reqThrustX = Math.max(0, totalDrag + HULL.mass * accelX);
+      const totalThrust = Math.min(HULL.weight * 0.55, reqThrustX / cosT);
+      const thrustX = totalThrust * Math.cos(theta);
+      const thrustZ = totalThrust * Math.sin(theta);
+
+      // Propulsion thrust acts below CG (outboard ~0.42 m, inboard trawler shaft ~0.22 m);
+      // hull bottom skin friction acts below CG, slightly bow-down.
+      const thrustArm = HULL.type === 'trawler' ? 0.22 : 0.42;
+      const tauPropulsion = totalThrust * thrustArm - skinDrag * HULL.zCG;
+
+      // High-speed aerodynamic ground-effect cushion under the elevated dry forward flat bottom
+      const dryBowLen = Math.max(0, HULL.length - wettedLength);
+      const aeroLift = 0.5 * 1.225 * speedMs * speedMs * HULL.beamFlat * dryBowLen * 0.42 * Math.max(0, Math.sin(theta));
+      const xAeroArm = (xStagLocal + 0.5 * dryBowLen) - xCGLocal;
+      const tauAero = aeroLift * xAeroArm;
+
+      // Smooth progressive hydrodynamic/reserve-buoyancy pitch restoring torque
+      // Keeps bow-up trim naturally under control without a hard angle clamp
+      const thetaSoft = HULL.type === 'trawler' ? 0.075 : 0.105; // ~4.3° trawler, ~6.0° planing
+      let tauTrimControl = 0;
+      if (theta > thetaSoft) {
+        const excess = theta - thetaSoft;
+        const kRestore = HULL.type === 'trawler' ? 28000 : 21000;
+        tauTrimControl = -kRestore * excess * (1 + 14 * excess);
+      } else if (theta < -0.04) {
+        const excess = -0.04 - theta;
+        tauTrimControl = 22000 * excess * (1 + 10 * excess);
+      }
+
+      // Global rotational stability damping (air + water radiation)
+      const tauGlobalDamp = -(HULL.type === 'trawler' ? 1150.0 : 780.0) * omega;
+
+      // Combine all forces & torques (exact 2D vector components)
+      const fHullX = -totalDrag;
+      const fHullZ = fBuoyTotal + fLiftTotal + aeroLift + fDampTotal;
+      const fTotalX = thrustX + fHullX;
+      const fTotalZ = fHullZ + thrustZ - HULL.weight;
+      const tauTotal = tauBuoyTotal + tauLiftTotal + tauDampTotal + tauPropulsion + tauAero + tauTrimControl + tauGlobalDamp;
+
+      // Centers of action (combined hydrodynamic Center of Pressure on the keel)
+      const xCB = fBuoyTotal > 10 ? xBuoyMomentSum / fBuoyTotal : xCGWorld;
+      const xCP = fLiftTotal > 10 ? xLiftMomentSum / fLiftTotal : xCGWorld;
+      const fHydroTotal = fBuoyTotal + fLiftTotal;
+      const xCPLocal = fHydroTotal > 10 ? xCPLocalMomentSum / fHydroTotal : xCGLocal;
+      const cpWorld = localToWorld(xCPLocal, keelZ(xCPLocal), zCG, theta, lcgFrac);
+
+      return {
+        fTotalX,
+        fTotalZ,
+        tauTotal,
+        fBuoyTotal,
+        fLiftTotal,
+        fHydroTotal,
+        fHullX,
+        fHullZ,
+        thrustX,
+        thrustZ,
+        totalThrust,
+        totalDrag,
+        xCB,
+        xCP,
+        cpWorld,
+        xCGWorld,
+        wettedLength,
+        wettedPct: (wettedLength / HULL.length) * 100,
+        stagWorld,
+        transomWorld,
+        pData,
+        Fr,
+        Re: (speedMs * wettedLength) / NU,
+      };
+    }
+
+    // =========================================================================
+    // 5. HULL SAFETY CONSTRAINTS & REST EQUILIBRIUM SOLVER
+    // =========================================================================
+    const MIN_TRANSOM_FREEBOARD = 0.05; // Keep transom top at least 5 cm above waterline
+
+    /**
+     * Guarantees the transom top never drops below the static or local dynamic
+     * waterline (no hard trim cap; trim is controlled smoothly by restoring physics).
+     */
+    function enforceHullConstraints(hullState, speedMs, lcgFrac, wf) {
+      // Wide numerical stability guard only (±35°)
+      hullState.theta = Math.max(-0.61, Math.min(0.61, hullState.theta));
+
+      const transomTop = localToWorld(0, HULL.transomHeight, hullState.zCG, hullState.theta, lcgFrac);
+      const localEta = wf
+        ? wf.sample(transomTop.x, speedMs).eta
+        : sampleHumpWave(transomTop.x, speedMs).eta;
+      const minTopZ = Math.max(0, localEta) + MIN_TRANSOM_FREEBOARD;
+
+      if (transomTop.z < minTopZ) {
+        hullState.zCG += minTopZ - transomTop.z;
+        if (hullState.vz < 0) hullState.vz = 0;
+        if (hullState.omega > 0) hullState.omega *= 0.5;
+      }
+
+      hullState.zCG = Math.max(-0.35, Math.min(1.10, hullState.zCG));
+    }
+
+    /**
+     * Relaxes the 2-DOF hull solver rapidly to steady-state rest equilibrium.
+     */
+    function solveSteadyState(speedKn, lcgFrac, initGuess) {
+      const speedMs = speedKn * KNOTS_TO_MS;
+      const st = initGuess
+        ? { zCG: initGuess.zCG, vz: 0, theta: initGuess.theta, omega: 0 }
+        : { zCG: 0.16, vz: 0, theta: 0.02, omega: 0 };
+
+      const dt = 0.022;
+      for (let step = 0; step < 150; step++) {
+        const res = evaluateHullForces(st, speedMs, lcgFrac, null, false);
+        const az = res.fTotalZ / HULL.mass;
+        const alpha = res.tauTotal / HULL.Iyy;
+
+        st.vz = (st.vz + az * dt) * 0.84;
+        st.omega = (st.omega + alpha * dt) * 0.84;
+        st.zCG += st.vz * dt;
+        st.theta += st.omega * dt;
+        enforceHullConstraints(st, speedMs, lcgFrac, null);
+      }
+      return { zCG: st.zCG, theta: st.theta };
+    }
+
+    // =========================================================================
+    // 6. SPRAY & WAKE FOAM PARTICLE SYSTEM
+    // =========================================================================
+    class ParticleSystem {
+      constructor() {
+        this.spray = [];
+        this.foam = [];
+      }
+
+      reset() {
+        this.spray.length = 0;
+        this.foam.length = 0;
+      }
+
+      update(dt, speedMs, stagWorld, transomWorld, trimRad) {
+        if (stagWorld && speedMs > 2.2) {
+          const rate = Math.min(3.5, (speedMs - 2.0) * 0.35);
+          const count = Math.floor(rate) + (Math.random() < rate % 1 ? 1 : 0);
+          for (let i = 0; i < count; i++) {
+            const ejectUp = (0.8 + Math.random() * 1.6) * Math.min(2.4, speedMs * 0.19) * (0.65 + trimRad * 3.5);
+            const ejectFwd = (0.3 + Math.random() * 1.1) - speedMs * 0.32;
+            this.spray.push({
+              x: stagWorld.x + (Math.random() - 0.3) * 0.12,
+              z: stagWorld.z + 0.03,
+              vx: ejectFwd,
+              vz: ejectUp,
+              life: 0.28 + Math.random() * 0.35,
+              maxLife: 0.63,
+              size: 1.5 + Math.random() * 2.2,
+            });
+          }
+        }
+
+        if (transomWorld && speedMs > 1.2) {
+          const count = speedMs > 7 ? 2 : 1;
+          for (let i = 0; i < count; i++) {
+            this.foam.push({
+              x: transomWorld.x - Math.random() * 0.15,
+              z: transomWorld.z + 0.02 + (Math.random() - 0.5) * 0.06,
+              vx: -speedMs * (0.85 + Math.random() * 0.2),
+              vz: (Math.random() * 0.55) * Math.min(1.5, speedMs * 0.12),
+              life: 0.45 + Math.random() * 0.55,
+              maxLife: 1.0,
+              size: 2.0 + Math.random() * 3.2,
+            });
+          }
+        }
+
+        for (let i = this.spray.length - 1; i >= 0; i--) {
+          const p = this.spray[i];
+          p.life -= dt;
+          if (p.life <= 0) {
+            this.spray.splice(i, 1);
+            continue;
+          }
+          p.vx -= speedMs * 1.2 * dt;
+          p.vz -= G * 0.85 * dt;
+          p.x += p.vx * dt;
+          p.z += p.vz * dt;
+        }
+
+        for (let i = this.foam.length - 1; i >= 0; i--) {
+          const p = this.foam[i];
+          p.life -= dt;
+          if (p.life <= 0 || p.x < WORLD.xMin) {
+            this.foam.splice(i, 1);
+            continue;
+          }
+          p.vz -= G * 0.35 * dt;
+          p.x += p.vx * dt;
+          p.z += p.vz * dt;
+        }
+      }
+    }
+
+    // =========================================================================
+    // 7. APPLICATION STATE
+    // =========================================================================
+    const appState = {
+      speedKn: 0.0,
+      targetSpeedKn: 0.0,
+      lcgFrac: 0.37,
+      chopAmp: 0.0,
+      autoRamp: false,
+      paused: false,
+      cgSweep: false,
+      cgSweepPhase: 0,
+      showVectors: true,
+      speedTransition: null,
+      hull: { zCG: 0.16, vz: 0, theta: 0.015, omega: 0 },
+      restState: { zCG: 0.16, theta: 0.015 },
+      lastEval: null,
+    };
+
+    const waveField = new WaveField();
+    const particles = new ParticleSystem();
+
+    // =========================================================================
+    // 8. 2D SIDE-VIEW BLACK & GOLD CANVAS RENDERER
+    // =========================================================================
+    const simCanvas = document.getElementById('simCanvas');
+    const simCtx = simCanvas.getContext('2d');
+
+    let simView = { width: 800, height: 460, dpr: 1, ppm: 80, originX: 400, waterY: 260 };
+
+    function resizeCanvas() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const simRect = simCanvas.parentElement.getBoundingClientRect();
+      simCanvas.width = Math.max(1, Math.floor(simRect.width * dpr));
+      simCanvas.height = Math.max(1, Math.floor(simRect.height * dpr));
+      simCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const w = simRect.width;
+      const h = simRect.height;
+      const ppm = Math.max(46, Math.min(130, w / 9.2, h / 4.2));
+      simView = {
+        width: w,
+        height: h,
+        dpr,
+        ppm,
+        originX: w * 0.53,
+        waterY: h * 0.57,
+      };
+    }
+
+    function worldToScreen(wx, wz) {
+      return {
+        x: simView.originX + wx * simView.ppm,
+        y: simView.waterY - wz * simView.ppm,
+      };
+    }
+
+    function traceHullPath(ctx, zCGWorld, theta, lcgFrac) {
+      ctx.beginPath();
+      let w0 = localToWorld(0, HULL.transomHeight, zCGWorld, theta, lcgFrac);
+      let pt = worldToScreen(w0.x, w0.z);
+      ctx.moveTo(pt.x, pt.y);
+
+      w0 = localToWorld(0, keelZ(0), zCGWorld, theta, lcgFrac);
+      pt = worldToScreen(w0.x, w0.z);
+      ctx.lineTo(pt.x, pt.y);
+
+      for (let i = 0; i < HULL_PANELS.length; i++) {
+        const p = HULL_PANELS[i];
+        const w = localToWorld(p.x1, p.z1, zCGWorld, theta, lcgFrac);
+        const s = worldToScreen(w.x, w.z);
+        ctx.lineTo(s.x, s.y);
+      }
+
+      const bowTop = localToWorld(HULL.length + 0.10, HULL.bowSheerHeight, zCGWorld, theta, lcgFrac);
+      const sBowTop = worldToScreen(bowTop.x, bowTop.z);
+      ctx.lineTo(sBowTop.x, sBowTop.y);
+
+      for (let k = 12; k >= 0; k--) {
+        const xl = (k / 12) * HULL.length;
+        const w = localToWorld(xl, sheerZ(xl), zCGWorld, theta, lcgFrac);
+        const s = worldToScreen(w.x, w.z);
+        ctx.lineTo(s.x, s.y);
+      }
+      ctx.closePath();
+    }
+
+    function drawOutboardMotor(ctx, zCGWorld, theta, lcgFrac) {
+      const toS = (xl, zl) => {
+        const w = localToWorld(xl, zl, zCGWorld, theta, lcgFrac);
+        return worldToScreen(w.x, w.z);
+      };
+
+      ctx.save();
+      ctx.beginPath();
+      [
+        [-0.44, 0.92],
+        [-0.02, 0.94],
+        [0.02, 0.66],
+        [-0.38, 0.64],
+      ].forEach(([xl, zl], idx) => {
+        const p = toS(xl, zl);
+        if (idx === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      });
+      ctx.closePath();
+      ctx.fillStyle = '#1c1917';
+      ctx.strokeStyle = '#d4af37';
+      ctx.lineWidth = 1.4;
+      ctx.fill();
+      ctx.stroke();
+
+      const stripeA = toS(-0.40, 0.79);
+      const stripeB = toS(-0.02, 0.80);
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(stripeA.x, stripeA.y);
+      ctx.lineTo(stripeB.x, stripeB.y);
+      ctx.stroke();
+
+      ctx.beginPath();
+      [
+        [-0.24, 0.64],
+        [-0.08, 0.64],
+        [-0.10, -0.22],
+        [-0.22, -0.22],
+      ].forEach(([xl, zl], idx) => {
+        const p = toS(xl, zl);
+        if (idx === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      });
+      ctx.closePath();
+      ctx.fillStyle = '#141210';
+      ctx.strokeStyle = '#a18038';
+      ctx.lineWidth = 1.2;
+      ctx.fill();
+      ctx.stroke();
+
+      const propA = toS(-0.32, -0.18);
+      const propB = toS(-0.04, -0.18);
+      ctx.strokeStyle = '#fde68a';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(propA.x, propA.y);
+      ctx.lineTo(propB.x, propB.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    /**
+     * Draws a sleek, low-profile sporty helm cab on the planing skiff hull.
+     */
+    function drawSkiffCab(ctx, zCGWorld, theta, lcgFrac) {
+      const toS = (xl, zl) => {
+        const w = localToWorld(xl, zl, zCGWorld, theta, lcgFrac);
+        return worldToScreen(w.x, w.z);
+      };
+
+      ctx.save();
+      const zAft = sheerZ(1.55) - 0.04;
+      const zFwd = sheerZ(3.65) - 0.04;
+
+      // Aerodynamic cuddy/helm cabin profile with aft-swept windshield
+      ctx.beginPath();
+      [
+        [1.55, zAft],
+        [1.72, 1.32],
+        [2.98, 1.30],
+        [3.65, zFwd],
+      ].forEach(([xl, zl], idx) => {
+        const p = toS(xl, zl);
+        if (idx === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      });
+      ctx.closePath();
+      ctx.fillStyle = '#171512';
+      ctx.strokeStyle = '#d4af37';
+      ctx.lineWidth = 1.6;
+      ctx.fill();
+      ctx.stroke();
+
+      // Sleek gold roof accent line
+      const rA = toS(1.66, 1.32);
+      const rB = toS(3.04, 1.30);
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(rA.x, rA.y);
+      ctx.lineTo(rB.x, rB.y);
+      ctx.stroke();
+
+      // Swept tinted side & windshield glass
+      const winPolys = [
+        [[1.82, 0.90], [2.62, 0.92], [2.62, 1.21], [1.86, 1.22]],
+        [[2.72, 0.92], [3.44, 0.95], [2.95, 1.21], [2.72, 1.21]],
+      ];
+      for (const poly of winPolys) {
+        ctx.beginPath();
+        poly.forEach(([xl, zl], idx) => {
+          const p = toS(xl, zl);
+          if (idx === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(250, 204, 21, 0.14)';
+        ctx.strokeStyle = 'rgba(250, 204, 21, 0.65)';
+        ctx.lineWidth = 1.1;
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    /**
+     * Draws classic trawler inboard running gear (rudder, shaft, propeller)
+     * and a compact black-and-gold wheelhouse / pilothouse cabin on deck.
+     */
+    function drawTrawlerUnderbody(ctx, zCGWorld, theta, lcgFrac) {
+      const toS = (xl, zl) => {
+        const w = localToWorld(xl, zl, zCGWorld, theta, lcgFrac);
+        return worldToScreen(w.x, w.z);
+      };
+
+      ctx.save();
+      // Rudder blade tucked under aft run
+      ctx.beginPath();
+      [
+        [0.14, 0.24],
+        [0.44, 0.22],
+        [0.40, -0.06],
+        [0.16, -0.05],
+      ].forEach(([xl, zl], idx) => {
+        const p = toS(xl, zl);
+        if (idx === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      });
+      ctx.closePath();
+      ctx.fillStyle = '#181512';
+      ctx.strokeStyle = '#a18038';
+      ctx.lineWidth = 1.3;
+      ctx.fill();
+      ctx.stroke();
+
+      // Inboard propeller shaft + bronze prop ahead of rudder
+      const shA = toS(1.12, 0.14);
+      const shB = toS(0.56, 0.04);
+      ctx.strokeStyle = '#d4af37';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(shA.x, shA.y);
+      ctx.lineTo(shB.x, shB.y);
+      ctx.stroke();
+
+      const prTop = toS(0.58, 0.14);
+      const prBot = toS(0.54, -0.06);
+      ctx.strokeStyle = '#fde68a';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(prTop.x, prTop.y);
+      ctx.lineTo(prBot.x, prBot.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawTrawlerCabin(ctx, zCGWorld, theta, lcgFrac) {
+      const xShift = 0.55; // Position pilothouse forward for both hulls
+      const toS = (xl, zl) => {
+        const w = localToWorld(xl + xShift, zl, zCGWorld, theta, lcgFrac);
+        return worldToScreen(w.x, w.z);
+      };
+
+      ctx.save();
+      // Pilothouse / wheelhouse silhouette with classic forward-raked trawler brow
+      const zAft = sheerZ(1.55 + xShift) - 0.04;
+      const zFwd = sheerZ(3.55 + xShift) - 0.04;
+      ctx.beginPath();
+      [
+        [1.55, zAft],
+        [1.62, 1.56],
+        [3.62, 1.60],
+        [3.46, zFwd],
+      ].forEach(([xl, zl], idx) => {
+        const p = toS(xl, zl);
+        if (idx === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      });
+      ctx.closePath();
+      ctx.fillStyle = '#171512';
+      ctx.strokeStyle = '#d4af37';
+      ctx.lineWidth = 1.6;
+      ctx.fill();
+      ctx.stroke();
+
+      // Roof visor overhang
+      const vA = toS(1.54, 1.56);
+      const vB = toS(3.72, 1.60);
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(vA.x, vA.y);
+      ctx.lineTo(vB.x, vB.y);
+      ctx.stroke();
+
+      // Side & forward wheelhouse windows
+      const winPolys = [
+        [[1.78, 1.12], [2.42, 1.14], [2.42, 1.44], [1.78, 1.43]],
+        [[2.56, 1.14], [3.38, 1.16], [3.46, 1.46], [2.56, 1.44]],
+      ];
+      for (const poly of winPolys) {
+        ctx.beginPath();
+        poly.forEach(([xl, zl], idx) => {
+          const p = toS(xl, zl);
+          if (idx === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(250, 204, 21, 0.14)';
+        ctx.strokeStyle = 'rgba(250, 204, 21, 0.65)';
+        ctx.lineWidth = 1.1;
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      // Compact mast & radar bar on pilothouse roof
+      const mBase = toS(2.45, 1.58);
+      const mTop = toS(2.38, 2.02);
+      ctx.strokeStyle = '#d4af37';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(mBase.x, mBase.y);
+      ctx.lineTo(mTop.x, mTop.y);
+      ctx.stroke();
+
+      const rA = toS(2.26, 1.92);
+      const rB = toS(2.56, 1.93);
+      ctx.strokeStyle = '#fde68a';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(rA.x, rA.y);
+      ctx.lineTo(rB.x, rB.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function renderSimulation() {
+      const ctx = simCtx;
+      const { width, height, ppm, waterY } = simView;
+      const speedMs = appState.speedKn * KNOTS_TO_MS;
+      const ev = appState.lastEval;
+      if (!ev) return;
+
+      // 1. Deep Obsidian-Black Background
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
+      bgGrad.addColorStop(0, '#040405');
+      bgGrad.addColorStop(0.55, '#09090b');
+      bgGrad.addColorStop(1, '#0c0905');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, width, height);
+
+      // 2. Subtle Gold Coordinate Grid
+      ctx.save();
+      const xStartM = Math.floor((0 - simView.originX) / ppm);
+      const xEndM = Math.ceil((width - simView.originX) / ppm);
+      const zStartM = Math.floor((waterY - height) / ppm);
+      const zEndM = Math.ceil(waterY / ppm);
+
+      for (let xm = xStartM; xm <= xEndM; xm += 0.5) {
+        const sx = simView.originX + xm * ppm;
+        const isMajor = Math.abs(xm - Math.round(xm)) < 0.01;
+        ctx.strokeStyle = isMajor ? 'rgba(234, 179, 8, 0.09)' : 'rgba(212, 175, 55, 0.03)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(sx, 0);
+        ctx.lineTo(sx, height);
+        ctx.stroke();
+      }
+      for (let zm = zStartM; zm <= zEndM; zm += 0.5) {
+        const sy = waterY - zm * ppm;
+        const isMajor = Math.abs(zm - Math.round(zm)) < 0.01;
+        ctx.strokeStyle = isMajor ? 'rgba(234, 179, 8, 0.09)' : 'rgba(212, 175, 55, 0.03)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, sy);
+        ctx.lineTo(width, sy);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // 3. Undisturbed Static Waterline (SWL) Reference
+      ctx.save();
+      ctx.setLineDash([6, 6]);
+      ctx.strokeStyle = 'rgba(212, 175, 55, 0.28)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, waterY);
+      ctx.lineTo(width, waterY);
+      ctx.stroke();
+      ctx.restore();
+
+      // 4. Dynamic Water Surface, Dry-Transom Ventilation & Obsidian-Gold Water Column
+      const ventFactor = Math.max(0, Math.min(1, (ev.Fr - 0.28) / 0.62)) * HULL.ventScale;
+      const transomX = ev.transomWorld ? ev.transomWorld.x : -2.5;
+      const transomZ = ev.transomWorld ? ev.transomWorld.z : 0;
+      const cavityDecay = 0.75 + 1.85 * ventFactor;
+
+      const sampleStepPx = 4;
+      const surfacePts = [];
+      const afterglowPts = [];
+      const afterglowLen = 1.8 + 2.8 * ventFactor;
+
+      for (let sx = -4; sx <= width + 4; sx += sampleStepPx) {
+        const wx = (sx - simView.originX) / ppm;
+        const rawEta = waveField.sample(wx, speedMs).eta;
+        let displayEta = rawEta;
+
+        // Dry transom effect: water detaches cleanly at the transom bottom corner
+        // and recovers smoothly into the wake behind the stern
+        if (ventFactor > 0.02 && wx <= transomX) {
+          const distAft = transomX - wx;
+          const cavityW = ventFactor * Math.exp(-distAft / cavityDecay);
+          const depressed = Math.min(rawEta, transomZ);
+          displayEta = rawEta * (1 - cavityW) + depressed * cavityW;
+
+          if (distAft <= afterglowLen) {
+            afterglowPts.push({
+              x: sx,
+              y: waterY - displayEta * ppm,
+              rawY: waterY - rawEta * ppm,
+              u: distAft / afterglowLen,
+            });
+          }
+        }
+
+        surfacePts.push({ x: sx, y: waterY - displayEta * ppm });
+      }
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(surfacePts[0].x, height + 2);
+      for (let i = 0; i < surfacePts.length; i++) {
+        ctx.lineTo(surfacePts[i].x, surfacePts[i].y);
+      }
+      ctx.lineTo(surfacePts[surfacePts.length - 1].x, height + 2);
+      ctx.closePath();
+
+      const waterGrad = ctx.createLinearGradient(0, waterY - 30, 0, height);
+      waterGrad.addColorStop(0, 'rgba(180, 132, 32, 0.24)');
+      waterGrad.addColorStop(0.28, 'rgba(92, 66, 18, 0.22)');
+      waterGrad.addColorStop(1, 'rgba(8, 7, 5, 0.90)');
+      ctx.fillStyle = waterGrad;
+      ctx.fill();
+
+      ctx.save();
+      ctx.clip();
+      const streakSpacingX = 1.6 * ppm;
+      const scrollPx = (waveField.flowOffset * ppm) % streakSpacingX;
+      ctx.strokeStyle = 'rgba(234, 179, 8, 0.14)';
+      ctx.lineWidth = 1.2;
+      for (let row = 0; row < 5; row++) {
+        const yOff = waterY + 22 + row * 28;
+        if (yOff > height) break;
+        const rowShift = (row * 53) % streakSpacingX;
+        const streakLen = Math.min(52, 12 + speedMs * 2.8);
+        for (let sx = -streakSpacingX; sx < width + streakSpacingX; sx += streakSpacingX) {
+          const x0 = sx - scrollPx + rowShift;
+          ctx.beginPath();
+          ctx.moveTo(x0, yOff);
+          ctx.lineTo(x0 - streakLen, yOff);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+
+      ctx.beginPath();
+      for (let i = 0; i < surfacePts.length; i++) {
+        if (i === 0) ctx.moveTo(surfacePts[i].x, surfacePts[i].y);
+        else ctx.lineTo(surfacePts[i].x, surfacePts[i].y);
+      }
+      ctx.strokeStyle = 'rgba(250, 204, 21, 0.85)';
+      ctx.lineWidth = 2.2;
+      ctx.shadowColor = 'rgba(234, 179, 8, 0.55)';
+      ctx.shadowBlur = 10;
+      ctx.stroke();
+      ctx.restore();
+
+      // 4b. Dry-Transom Afterglow Trace behind the stern
+      if (ventFactor > 0.05 && afterglowPts.length > 2) {
+        const firstPt = afterglowPts[0];
+        const lastPt = afterglowPts[afterglowPts.length - 1];
+
+        ctx.save();
+        // Soft fading golden-amber afterglow ribbon along the detached wake surface
+        const glowGrad = ctx.createLinearGradient(lastPt.x, 0, firstPt.x, 0);
+        glowGrad.addColorStop(0, `rgba(250, 204, 21, ${(0.88 * ventFactor).toFixed(3)})`);
+        glowGrad.addColorStop(0.45, `rgba(245, 158, 11, ${(0.45 * ventFactor).toFixed(3)})`);
+        glowGrad.addColorStop(1, 'rgba(245, 158, 11, 0)');
+
+        // Outer luminous afterglow pass
+        ctx.beginPath();
+        for (let i = 0; i < afterglowPts.length; i++) {
+          if (i === 0) ctx.moveTo(afterglowPts[i].x, afterglowPts[i].y);
+          else ctx.lineTo(afterglowPts[i].x, afterglowPts[i].y);
+        }
+        ctx.strokeStyle = glowGrad;
+        ctx.lineWidth = 7.5;
+        ctx.lineCap = 'round';
+        ctx.shadowColor = 'rgba(250, 204, 21, 0.75)';
+        ctx.shadowBlur = 16;
+        ctx.stroke();
+
+        // Crisp bright core trace streaming off transom edge
+        const coreGrad = ctx.createLinearGradient(lastPt.x, 0, firstPt.x, 0);
+        coreGrad.addColorStop(0, `rgba(254, 249, 195, ${(0.95 * ventFactor).toFixed(3)})`);
+        coreGrad.addColorStop(0.55, `rgba(250, 204, 21, ${(0.50 * ventFactor).toFixed(3)})`);
+        coreGrad.addColorStop(1, 'rgba(250, 204, 21, 0)');
+        ctx.strokeStyle = coreGrad;
+        ctx.lineWidth = 2.4;
+        ctx.shadowBlur = 8;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 5. Propulsion Gear, Cabin & 2D Hull Body
+      if (HULL.type === 'trawler') {
+        drawTrawlerUnderbody(ctx, appState.hull.zCG, appState.hull.theta, appState.lcgFrac);
+      } else {
+        drawOutboardMotor(ctx, appState.hull.zCG, appState.hull.theta, appState.lcgFrac);
+      }
+      drawTrawlerCabin(ctx, appState.hull.zCG, appState.hull.theta, appState.lcgFrac);
+
+      ctx.save();
+      traceHullPath(ctx, appState.hull.zCG, appState.hull.theta, appState.lcgFrac);
+      const hullGrad = ctx.createLinearGradient(0, waterY - 1.2 * ppm, 0, waterY + 0.5 * ppm);
+      hullGrad.addColorStop(0, '#27231d');
+      hullGrad.addColorStop(0.55, '#171512');
+      hullGrad.addColorStop(1, '#0c0b09');
+      ctx.fillStyle = hullGrad;
+      ctx.fill();
+
+      ctx.strokeStyle = '#d4af37';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.beginPath();
+      for (let k = 0; k <= 12; k++) {
+        const xl = (k / 12) * HULL.length;
+        const w = localToWorld(xl, sheerZ(xl) - 0.06, appState.hull.zCG, appState.hull.theta, appState.lcgFrac);
+        const s = worldToScreen(w.x, w.z);
+        if (k === 0) ctx.moveTo(s.x, s.y);
+        else ctx.lineTo(s.x, s.y);
+      }
+      ctx.strokeStyle = 'rgba(253, 224, 71, 0.35)';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      ctx.restore();
+
+      // 6. Highlighted Wetted Keel Segment
+      const wettedPanels = ev.pData.filter((d) => d.wetted);
+      if (wettedPanels.length > 0) {
+        ctx.save();
+        ctx.beginPath();
+        const firstP = wettedPanels[0].p;
+        const startW = localToWorld(firstP.x0, firstP.z0, appState.hull.zCG, appState.hull.theta, appState.lcgFrac);
+        const startS = worldToScreen(startW.x, startW.z);
+        ctx.moveTo(startS.x, startS.y);
+
+        for (let i = 0; i < wettedPanels.length; i++) {
+          const p = wettedPanels[i].p;
+          const w = localToWorld(p.x1, p.z1, appState.hull.zCG, appState.hull.theta, appState.lcgFrac);
+          const s = worldToScreen(w.x, w.z);
+          ctx.lineTo(s.x, s.y);
+        }
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 4.2;
+        ctx.lineCap = 'round';
+        ctx.shadowColor = 'rgba(250, 204, 21, 0.85)';
+        ctx.shadowBlur = 12;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 7. CG & CP Location Indicators
+      const cgS = worldToScreen(ev.xCGWorld, appState.hull.zCG);
+      const cpS = ev.cpWorld ? worldToScreen(ev.cpWorld.x, ev.cpWorld.z) : null;
+
+      const drawTag = (text, cx, cy, textColor, borderColor) => {
+        ctx.save();
+        ctx.font = '600 10px "JetBrains Mono", monospace';
+        const padX = 6;
+        const th = 18;
+        const tw = ctx.measureText(text).width + padX * 2;
+        ctx.fillStyle = 'rgba(8, 8, 10, 0.92)';
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(cx - tw / 2, cy - th / 2, tw, th, 5);
+        else ctx.rect(cx - tw / 2, cy - th / 2, tw, th);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = textColor;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, cx, cy + 0.5);
+        ctx.restore();
+      };
+
+      const drawArrow = (x1, y1, x2, y2, color, lineWidth = 2.6, headSize = 9) => {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const len = Math.hypot(dx, dy);
+        if (len < 4) return;
+        const angle = Math.atan2(dy, dx);
+
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = lineWidth;
+        ctx.lineCap = 'round';
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2 - Math.cos(angle) * (headSize * 0.65), y2 - Math.sin(angle) * (headSize * 0.65));
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headSize * Math.cos(angle - Math.PI / 6), y2 - headSize * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(x2 - headSize * Math.cos(angle + Math.PI / 6), y2 - headSize * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      };
+
+      // Separate Force Vectors (centered on CG, uniform scale, symbolic labels only)
+      if (appState.showVectors) {
+        const forceScale = 105 / HULL.weight; // Uniform scale: 105 px per 1.0 * Weight
+
+        // 1. Hydrostatic Buoyancy (B) upward from CG (slight left offset to separate from L)
+        if (ev.fBuoyTotal > 150) {
+          const by2 = cgS.y - ev.fBuoyTotal * forceScale;
+          drawArrow(cgS.x - 5, cgS.y, cgS.x - 5, by2, '#fef3c7', 2.4, 9);
+          drawTag('B', cgS.x - 20, by2 - 10, '#fef3c7', 'rgba(254, 243, 199, 0.55)');
+        }
+
+        // 2. Dynamic Planing Lift (L) upward from CG (slight right offset to separate from B)
+        if (ev.fLiftTotal > 150) {
+          const ly2 = cgS.y - ev.fLiftTotal * forceScale;
+          drawArrow(cgS.x + 5, cgS.y, cgS.x + 5, ly2, '#fbbf24', 2.4, 9);
+          drawTag('L', cgS.x + 20, ly2 - 10, '#fde047', 'rgba(251, 191, 36, 0.65)');
+        }
+
+        // 3. Hydrodynamic Drag (D) aft from CG
+        if (ev.totalDrag > 40) {
+          const dx2 = cgS.x - ev.totalDrag * forceScale;
+          drawArrow(cgS.x, cgS.y, dx2, cgS.y, '#f87171', 2.4, 9);
+          drawTag('D', dx2 - 14, cgS.y, '#fca5a5', 'rgba(248, 113, 113, 0.65)');
+        }
+
+        // 4. Propulsion Thrust (T) forward along hull axis from CG
+        if (ev.totalThrust > 40) {
+          const tx2 = cgS.x + ev.thrustX * forceScale;
+          const ty2 = cgS.y - ev.thrustZ * forceScale;
+          drawArrow(cgS.x, cgS.y, tx2, ty2, '#facc15', 2.4, 9);
+          drawTag('T', tx2 + 14, ty2 - 4, '#fde047', 'rgba(250, 204, 21, 0.7)');
+        }
+
+        // 5. Total Resultant Force (F = T + FB + FL + D + aero/damp) from CG
+        const totX = ev.thrustX + ev.fHullX;
+        const totZ = ev.thrustZ + ev.fHullZ;
+        if (Math.hypot(totX, totZ) > 100) {
+          const fx2 = cgS.x + totX * forceScale;
+          const fy2 = cgS.y - totZ * forceScale;
+          drawArrow(cgS.x, cgS.y, fx2, fy2, '#fb923c', 2.8, 10);
+          drawTag('F', fx2, fy2 - 18, '#fdba74', 'rgba(251, 146, 60, 0.75)');
+        }
+      }
+
+      // Subtle dashed line linking CG and CP horizontally to highlight lever arm
+      if (cpS) {
+        ctx.save();
+        ctx.setLineDash([3, 3]);
+        ctx.strokeStyle = 'rgba(250, 204, 21, 0.32)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(cgS.x, cgS.y);
+        ctx.lineTo(cpS.x, cpS.y);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // CG Marker (classic black & gold quadrant engineering symbol)
+      ctx.save();
+      ctx.fillStyle = '#09090b';
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.arc(cgS.x, cgS.y, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#facc15';
+      ctx.beginPath();
+      ctx.moveTo(cgS.x, cgS.y);
+      ctx.arc(cgS.x, cgS.y, 6.7, 0, Math.PI / 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(cgS.x, cgS.y);
+      ctx.arc(cgS.x, cgS.y, 6.7, Math.PI, (3 * Math.PI) / 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+      drawTag('CG', cgS.x - 24, cgS.y + 18, '#fef08a', 'rgba(250, 204, 21, 0.65)');
+
+      // CP Marker (champagne-gold diamond on wetted keel)
+      if (cpS) {
+        ctx.save();
+        const r = 6.5;
+        ctx.fillStyle = '#fef3c7';
+        ctx.strokeStyle = '#09090b';
+        ctx.lineWidth = 1.8;
+        ctx.shadowColor = 'rgba(250, 204, 21, 0.75)';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.moveTo(cpS.x, cpS.y - r);
+        ctx.lineTo(cpS.x + r, cpS.y);
+        ctx.lineTo(cpS.x, cpS.y + r);
+        ctx.lineTo(cpS.x - r, cpS.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+        drawTag('CP', cpS.x, cpS.y + 22, '#fef3c7', 'rgba(254, 243, 199, 0.55)');
+      }
+    }
+
+    // =========================================================================
+    // 9. MINIMAL HUD & REAL-TIME PHYSICS LOOP
+    // =========================================================================
+    const el = {
+      regimeBadge: document.getElementById('regimeBadge'),
+      regimeNotes: document.getElementById('regimeNotes'),
+      barStatic: document.getElementById('barStatic'),
+      barDynamic: document.getElementById('barDynamic'),
+      hudFroude: document.getElementById('hudFroude'),
+      hudReynolds: document.getElementById('hudReynolds'),
+      hudDrag: document.getElementById('hudDrag'),
+      hudSpeed: document.getElementById('hudSpeed'),
+      hudTrim: document.getElementById('hudTrim'),
+      speedTrack: document.getElementById('speedTrack'),
+      speedFill: document.getElementById('speedFill'),
+      speedThumb: document.getElementById('speedThumb'),
+      regimeScaleBar: document.getElementById('regimeScaleBar'),
+      poiMarkers: document.getElementById('poiMarkers'),
+      cgSlider: document.getElementById('cgSlider'),
+      hudCG: document.getElementById('hudCG'),
+      toggleVectors: document.getElementById('toggleVectors'),
+      toggleCGSweep: document.getElementById('toggleCGSweep'),
+      forceLegend: document.getElementById('forceLegend'),
+      btnHullSkiff: document.getElementById('btnHullSkiff'),
+      btnHullTrawler: document.getElementById('btnHullTrawler'),
+      btnPause: document.getElementById('btnPause'),
+      btnRamp: document.getElementById('btnRamp'),
+      btnRampText: document.getElementById('btnRampText'),
+      iconPlay: document.getElementById('iconPlay'),
+      iconPause: document.getElementById('iconPause'),
+      btnReset: document.getElementById('btnReset'),
+    };
+
+    const REGIME_DATA = {
+      displacement: {
+        label: 'Displacement',
+        style: 'bg-black/80 text-stone-300 border-stone-600/60',
+        notes: [
+          'Hydrostatic buoyancy supports nearly all hull weight',
+          'Full keel remains wetted; CP stays close to CG',
+          'Low wave-making drag and minimal bow-up trim',
+        ],
+      },
+      hump: {
+        label: 'Hump Transition',
+        style: 'bg-amber-600/20 text-amber-300 border-amber-500/65',
+        notes: [
+          'Hull sits in its stern trough behind a steep bow wave',
+          'Wave-making drag and bow-up trim peak sharply',
+          'Dynamic pressure builds forward as CP shifts ahead of CG',
+        ],
+      },
+      semi: {
+        label: 'Semi-Planing',
+        style: 'bg-amber-400/15 text-amber-300 border-amber-400/55',
+        notes: [
+          'Hull climbs over its bow wave and rises above waterline',
+          'Dynamic lift overtakes buoyancy as wetted keel shortens',
+          'Transom ventilates cleanly and wave drag starts to fall',
+        ],
+      },
+      planing: {
+        label: 'Full Planing',
+        style: 'bg-yellow-400/15 text-yellow-200 border-yellow-400/65',
+        notes: [
+          'Dynamic stagnation lift dominates over hydrostatic buoyancy',
+          'Minimal wetted keel aft; CP concentrates near leading edge',
+          'Hull skims high with lower wave drag',
+        ],
+      },
+    };
+
+    let activeRegimeKey = '';
+
+    function syncSpeedBarUI(kn) {
+      const pct = Math.max(0, Math.min(100, (kn / HULL.maxSpeedKn) * 100));
+      el.speedFill.style.height = `${pct}%`;
+      el.speedThumb.style.bottom = `${pct}%`;
+      el.speedTrack.setAttribute('aria-valuemax', HULL.maxSpeedKn.toString());
+      el.speedTrack.setAttribute('aria-valuenow', kn.toFixed(1));
+    }
+
+    function rebuildSpeedControls() {
+      const maxKn = HULL.maxSpeedKn;
+
+      // Rebuild vertical regime scale segments proportional to current hull's maxSpeedKn
+      const bands = [
+        { min: 0, max: 6.0, cls: 'bg-stone-600/75', title: 'Displacement' },
+        { min: 6.0, max: 11.0, cls: 'bg-amber-600/85', title: 'Hump Transition' },
+        { min: 11.0, max: 17.5, cls: 'bg-amber-400/85', title: 'Semi-Planing' },
+        { min: 17.5, max: maxKn, cls: 'bg-yellow-300/90', title: 'Full Planing' },
+      ];
+      el.regimeScaleBar.innerHTML = bands
+        .map((b) => {
+          const lo = Math.min(b.min, maxKn);
+          const hi = Math.min(b.max, maxKn);
+          const hPct = Math.max(0, ((hi - lo) / maxKn) * 100);
+          if (hPct <= 0.01) return '';
+          return `<div style="height: ${hPct.toFixed(2)}%" class="${b.cls}" title="${b.title}"></div>`;
+        })
+        .join('');
+
+      // Rebuild clickable POI markers scaled to current hull's maxSpeedKn
+      el.poiMarkers.innerHTML = HULL.pois
+        .map((p) => {
+          const pct = Math.max(0, Math.min(100, (p.kn / maxKn) * 100));
+          return `
+            <button type="button" data-poi-speed="${p.kn}" style="bottom: ${pct.toFixed(2)}%" class="poi-marker absolute left-0 translate-y-1/2 flex items-center gap-1.5 text-[10px] font-mono ${p.textCls} transition cursor-pointer whitespace-nowrap">
+              <span class="w-2 h-px ${p.tickCls}"></span>
+              <span>${p.label}</span>
+            </button>
+          `;
+        })
+        .join('');
+
+      el.poiMarkers.querySelectorAll('.poi-marker').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const kn = parseFloat(btn.dataset.poiSpeed);
+          startSpeedTransition(kn);
+        });
+      });
+
+      syncSpeedBarUI(appState.speedKn);
+    }
+
+    function updateHUD() {
+      const ev = appState.lastEval;
+      const trimDeg = (appState.hull.theta * 180) / Math.PI;
+      el.hudSpeed.textContent = appState.speedKn.toFixed(1);
+      el.hudTrim.textContent = trimDeg.toFixed(1);
+      syncSpeedBarUI(appState.speedKn);
+      if (appState.cgSweep) {
+        el.cgSlider.value = appState.lcgFrac.toFixed(3);
+        el.hudCG.textContent = appState.lcgFrac.toFixed(2);
+      }
+
+      if (ev) {
+        el.hudFroude.textContent = ev.Fr.toFixed(2);
+        if (ev.Re < 1e3) {
+          el.hudReynolds.textContent = '0';
+        } else {
+          const exp = Math.floor(Math.log10(ev.Re));
+          const mant = ev.Re / Math.pow(10, exp);
+          el.hudReynolds.textContent = `${mant.toFixed(1)}e${exp}`;
+        }
+        el.hudDrag.textContent = (ev.totalDrag / 1000).toFixed(2);
+
+        const totalUp = Math.max(1e-3, ev.fBuoyTotal + ev.fLiftTotal);
+        const staticPct = Math.max(0, Math.min(100, (ev.fBuoyTotal / totalUp) * 100));
+        const dynamicPct = 100 - staticPct;
+        el.barStatic.style.width = `${staticPct.toFixed(1)}%`;
+        el.barDynamic.style.width = `${dynamicPct.toFixed(1)}%`;
+
+        // Exact Fr boundaries matched to vertical regime scale & POI markers:
+        // Displacement: 0–6 (Fr < 0.44), Hump: 6–11 (0.44–0.81), Semi: 11–17.5 (0.81–1.29), Planing: 17.5+ (>= 1.29)
+        let key = 'displacement';
+        if (ev.Fr >= 1.29) {
+          key = 'planing';
+        } else if (ev.Fr >= 0.81) {
+          key = 'semi';
+        } else if (ev.Fr >= 0.44) {
+          key = 'hump';
+        }
+
+        if (activeRegimeKey !== key) {
+          activeRegimeKey = key;
+          const reg = REGIME_DATA[key];
+          el.regimeBadge.textContent = reg.label;
+          el.regimeBadge.className = `px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase border backdrop-blur-sm ${reg.style}`;
+          el.regimeNotes.innerHTML = reg.notes.map((n) => `<li>${n}</li>`).join('');
+        }
+      }
+    }
+
+    function setAutoRamp(enabled) {
+      appState.autoRamp = enabled;
+      if (enabled) appState.speedTransition = null;
+      el.iconPlay.classList.toggle('hidden', enabled);
+      el.iconPause.classList.toggle('hidden', !enabled);
+      el.btnRampText.textContent = enabled ? 'Pause' : 'Ramp';
+    }
+
+    function startSpeedTransition(targetKn) {
+      setAutoRamp(false);
+      const fromKn = appState.speedKn;
+      const delta = Math.abs(targetKn - fromKn);
+      if (delta < 0.05) {
+        appState.speedTransition = null;
+        appState.targetSpeedKn = targetKn;
+        syncSpeedBarUI(targetKn);
+        return;
+      }
+      // Cap peak acceleration during regime marker transitions
+      const maxPeakRateKn = HULL.type === 'trawler' ? 1.8 : 3.6;
+      const duration = Math.max(1.4, (1.5 * delta) / maxPeakRateKn);
+      appState.speedTransition = {
+        active: true,
+        fromKn,
+        toKn: targetKn,
+        elapsed: 0,
+        duration,
+      };
+    }
+
+    const FIXED_DT = 1 / 180;
+    let accumulator = 0;
+    let lastTimestamp = 0;
+
+    function stepSimulation(dt) {
+      const prevSpeedMs = appState.speedKn * KNOTS_TO_MS;
+      if (appState.autoRamp) {
+        appState.targetSpeedKn += HULL.rampRate * dt;
+        if (appState.targetSpeedKn >= HULL.maxSpeedKn) {
+          appState.targetSpeedKn = HULL.maxSpeedKn;
+          setAutoRamp(false);
+        }
+      } else if (appState.speedTransition && appState.speedTransition.active) {
+        const tr = appState.speedTransition;
+        tr.elapsed += dt;
+        const u = Math.min(1, tr.elapsed / tr.duration);
+        // Smooth cubic ease-in-out between speed markers
+        const eased = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+        appState.targetSpeedKn = tr.fromKn + (tr.toKn - tr.fromKn) * eased;
+        appState.speedKn = appState.targetSpeedKn;
+        if (u >= 1) {
+          appState.speedKn = tr.toKn;
+          appState.targetSpeedKn = tr.toKn;
+          syncSpeedBarUI(tr.toKn);
+          appState.speedTransition = null;
+        }
+      }
+
+      if (!appState.speedTransition || !appState.speedTransition.active) {
+        const maxManualRate = HULL.type === 'trawler' ? 2.2 : 4.2;
+        const diff = appState.targetSpeedKn - appState.speedKn;
+        const step = Math.sign(diff) * Math.min(Math.abs(diff), maxManualRate * dt);
+        appState.speedKn += step;
+      }
+
+      if (appState.cgSweep) {
+        appState.cgSweepPhase += dt * 0.9; // Smooth ~7s oscillation between 0.30 and 0.50
+        appState.lcgFrac = 0.40 + 0.10 * Math.sin(appState.cgSweepPhase);
+      }
+
+      const speedMs = appState.speedKn * KNOTS_TO_MS;
+      const accelX = (speedMs - prevSpeedMs) / dt;
+
+      waveField.clearPressure();
+      const ev = evaluateHullForces(appState.hull, speedMs, appState.lcgFrac, waveField, true, accelX);
+
+      const az = ev.fTotalZ / HULL.mass;
+      const alpha = ev.tauTotal / HULL.Iyy;
+
+      appState.hull.vz += az * dt;
+      appState.hull.omega += alpha * dt;
+      appState.hull.zCG += appState.hull.vz * dt;
+      appState.hull.theta += appState.hull.omega * dt;
+
+      enforceHullConstraints(appState.hull, speedMs, appState.lcgFrac, waveField);
+
+      waveField.step(dt, speedMs, appState.chopAmp);
+      appState.lastEval = ev;
+    }
+
+    function setPaused(paused) {
+      appState.paused = paused;
+      el.btnPause.textContent = paused ? 'Play' : 'Pause';
+      el.btnPause.className = paused
+        ? 'flex items-center justify-center py-2 px-1.5 rounded-lg font-semibold text-[11px] bg-amber-500/20 hover:bg-amber-500/30 active:scale-[0.98] text-yellow-200 border border-yellow-400/60 transition'
+        : 'flex items-center justify-center py-2 px-1.5 rounded-lg font-medium text-[11px] bg-zinc-900 hover:bg-zinc-800 active:scale-[0.98] text-amber-200 border border-amber-500/30 transition';
+    }
+
+    function animate(timestamp) {
+      if (!lastTimestamp) lastTimestamp = timestamp;
+      const frameDt = Math.min(0.05, Math.max(0.001, (timestamp - lastTimestamp) / 1000));
+      lastTimestamp = timestamp;
+
+      if (!appState.paused) {
+        accumulator += frameDt;
+        while (accumulator >= FIXED_DT) {
+          stepSimulation(FIXED_DT);
+          accumulator -= FIXED_DT;
+        }
+      }
+
+      renderSimulation();
+      updateHUD();
+      requestAnimationFrame(animate);
+    }
+
+    // =========================================================================
+    // 10. UI EVENT LISTENERS & INIT
+    // =========================================================================
+    let draggingSpeed = false;
+    function setSpeedFromPointer(e) {
+      const rect = el.speedTrack.getBoundingClientRect();
+      const frac = Math.max(0, Math.min(1, (rect.bottom - e.clientY) / Math.max(1, rect.height)));
+      const kn = Math.round(frac * HULL.maxSpeedKn * 10) / 10;
+      setAutoRamp(false);
+      appState.speedTransition = null;
+      appState.targetSpeedKn = kn;
+      syncSpeedBarUI(kn);
+    }
+
+    el.speedTrack.addEventListener('pointerdown', (e) => {
+      draggingSpeed = true;
+      el.speedTrack.setPointerCapture(e.pointerId);
+      setSpeedFromPointer(e);
+    });
+    el.speedTrack.addEventListener('pointermove', (e) => {
+      if (draggingSpeed) setSpeedFromPointer(e);
+    });
+    el.speedTrack.addEventListener('pointerup', (e) => {
+      draggingSpeed = false;
+      if (el.speedTrack.hasPointerCapture(e.pointerId)) {
+        el.speedTrack.releasePointerCapture(e.pointerId);
+      }
+    });
+    el.speedTrack.addEventListener('pointercancel', () => {
+      draggingSpeed = false;
+    });
+    el.speedTrack.addEventListener('keydown', (e) => {
+      const step = e.shiftKey ? 1.0 : 0.5;
+      if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        setAutoRamp(false);
+        appState.speedTransition = null;
+        appState.targetSpeedKn = Math.min(HULL.maxSpeedKn, appState.targetSpeedKn + step);
+      } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setAutoRamp(false);
+        appState.speedTransition = null;
+        appState.targetSpeedKn = Math.max(0, appState.targetSpeedKn - step);
+      }
+    });
+
+    el.cgSlider.addEventListener('input', () => {
+      appState.cgSweep = false;
+      el.toggleCGSweep.checked = false;
+      appState.lcgFrac = parseFloat(el.cgSlider.value);
+      el.hudCG.textContent = appState.lcgFrac.toFixed(2);
+      appState.restState = solveSteadyState(0, appState.lcgFrac, null);
+    });
+
+    el.toggleCGSweep.addEventListener('change', () => {
+      appState.cgSweep = el.toggleCGSweep.checked;
+      if (appState.cgSweep) {
+        // Initialize phase seamlessly from current CG position
+        const clamped = Math.max(-1, Math.min(1, (appState.lcgFrac - 0.40) / 0.10));
+        appState.cgSweepPhase = Math.asin(clamped);
+      }
+    });
+
+    el.toggleVectors.addEventListener('change', () => {
+      appState.showVectors = el.toggleVectors.checked;
+      el.forceLegend.classList.toggle('hidden', !appState.showVectors);
+    });
+
+    function setHullType(type) {
+      const profile = HULL_PROFILES[type];
+      if (!profile || HULL.type === type) return;
+      Object.assign(HULL, profile);
+      HULL.weight = HULL.mass * G;
+      HULL_PANELS = buildHullPanels();
+
+      const activeCls = 'py-1 px-1 rounded-md font-mono text-[10px] leading-tight font-semibold bg-amber-400 text-black transition';
+      const inactiveCls = 'py-1 px-1 rounded-md font-mono text-[10px] leading-tight font-medium text-stone-400 hover:text-amber-200 transition';
+      el.btnHullSkiff.className = type === 'skiff' ? activeCls : inactiveCls;
+      el.btnHullTrawler.className = type === 'trawler' ? activeCls : inactiveCls;
+
+      // Clamp current speed into the new hull's scaled envelope
+      appState.speedTransition = null;
+      appState.speedKn = Math.min(appState.speedKn, HULL.maxSpeedKn);
+      appState.targetSpeedKn = Math.min(appState.targetSpeedKn, HULL.maxSpeedKn);
+      rebuildSpeedControls();
+
+      appState.restState = solveSteadyState(0, appState.lcgFrac, null);
+      const speedMs = appState.speedKn * KNOTS_TO_MS;
+      appState.lastEval = evaluateHullForces(appState.hull, speedMs, appState.lcgFrac, waveField, false);
+    }
+
+    el.btnHullSkiff.addEventListener('click', () => setHullType('skiff'));
+    el.btnHullTrawler.addEventListener('click', () => setHullType('trawler'));
+
+    el.btnPause.addEventListener('click', () => {
+      setPaused(!appState.paused);
+    });
+
+    el.btnRamp.addEventListener('click', () => {
+      setPaused(false);
+      appState.speedTransition = null;
+      if (!appState.autoRamp && appState.speedKn >= HULL.maxSpeedKn - 0.2) {
+        appState.speedKn = 0;
+        appState.targetSpeedKn = 0;
+        syncSpeedBarUI(0);
+      }
+      setAutoRamp(!appState.autoRamp);
+    });
+
+    el.btnReset.addEventListener('click', () => {
+      setPaused(false);
+      setAutoRamp(false);
+      appState.cgSweep = false;
+      el.toggleCGSweep.checked = false;
+      appState.speedTransition = null;
+      appState.speedKn = 0;
+      appState.targetSpeedKn = 0;
+      appState.lcgFrac = 0.37;
+      el.cgSlider.value = '0.37';
+      el.hudCG.textContent = '0.37';
+      appState.restState = solveSteadyState(0, appState.lcgFrac, null);
+      syncSpeedBarUI(0);
+
+      waveField.reset();
+      particles.reset();
+
+      appState.hull = { zCG: appState.restState.zCG, vz: 0, theta: appState.restState.theta, omega: 0 };
+      appState.lastEval = evaluateHullForces(appState.hull, 0, appState.lcgFrac, waveField, false);
+      updateHUD();
+    });
+
+    function init() {
+      appState.restState = solveSteadyState(0, appState.lcgFrac, null);
+      appState.hull = {
+        zCG: appState.restState.zCG,
+        vz: 0,
+        theta: appState.restState.theta,
+        omega: 0,
+      };
+      appState.lastEval = evaluateHullForces(appState.hull, 0, appState.lcgFrac, waveField, false);
+
+      resizeCanvas();
+      rebuildSpeedControls();
+      window.addEventListener('resize', resizeCanvas);
+      if (typeof ResizeObserver !== 'undefined') {
+        new ResizeObserver(resizeCanvas).observe(simCanvas.parentElement);
+      }
+
+      updateHUD();
+      requestAnimationFrame(animate);
+    }
+
+    init();
+  </script>
+</body>
+</html>
+
