@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SlideMAKER - Modern Presentation Studio</title>
+  <meta name="description" content="Google Slides-inspired presentation web app featuring institutional UdeS branding, HD PDF vector backgrounds, and rich element editing.">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&family=Montserrat:wght@400;600;700&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:wght@500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- App Stylesheets -->
+  <link rel="stylesheet" href="css/main.css?v=2.5">
+  <link rel="stylesheet" href="css/slide-canvas.css?v=2.5">
+  <link rel="stylesheet" href="css/toolbars.css?v=2.5">
+  <link rel="stylesheet" href="css/presenter.css?v=2.5">
+  <link rel="stylesheet" href="css/zoom-flow.css?v=2.5">
+  
+  <!-- CDN Libraries: html2canvas, jsPDF, JSZip, Chart.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+<div id="app-container">
+
+  <!-- 1. Top Header -->
+  <header id="app-header">
+    <div class="header-left">
+      <div class="app-brand" id="brand-home" title="SlideMAKER - Modern Presentation Studio">
+        <div class="brand-icon">S</div>
+        <div class="brand-name">Slide<span style="color:var(--udes-lime);">MAKER</span></div>
+        <span class="brand-badge">UdeS</span>
+      </div>
+
+      <div class="title-editor-wrap" title="Click to rename presentation">
+        <input type="text" id="presentation-title-input" class="presentation-title-input" value="Untitled Presentation" placeholder="Presentation Title">
+      </div>
+
+      <span id="autosave-status-badge" class="autosave-status-badge" title="Changes are automatically saved in your browser">
+        <i class="fa-solid fa-cloud-check"></i> <span>Ready</span>
+      </span>
+    </div>
+
+    <div class="header-right">
+      <input type="file" id="file-open-project" accept=".slidemaker,.json,.html,.htm" style="display:none;">
+      <input type="file" id="file-import-html" accept=".html,.htm" style="display:none;">
+      
+      <button id="btn-new-presentation" class="btn btn-secondary btn-sm" title="Start a New Blank Presentation">
+        <i class="fa-solid fa-file-circle-plus"></i> New
+      </button>
+
+      <button id="btn-load-showcase" class="btn btn-secondary btn-sm" title="Load Feature Showcase Demo Presentation">
+        <i class="fa-solid fa-sparkles fa-wand-magic-sparkles" style="color:var(--udes-lime);"></i> Demo
+      </button>
+
+      <button id="btn-open-project" class="btn btn-secondary btn-sm" title="Open Project (.slidemaker / JSON / HTML)">
+        <i class="fa-solid fa-folder-open"></i> Open
+      </button>
+
+      <button id="btn-import-html" class="btn btn-secondary btn-sm" title="Import Standalone HTML Presentation (.html)">
+        <i class="fa-solid fa-file-import"></i> Import HTML
+      </button>
+
+      <button id="btn-save-project" class="btn btn-secondary btn-sm" title="Save Project to Computer (Ctrl+S)">
+        <i class="fa-solid fa-floppy-disk"></i> Save
+      </button>
+
+      <!-- Export Dropdown -->
+      <div class="dropdown-wrap">
+        <button id="btn-export-dropdown" class="btn btn-secondary btn-sm" title="Export Options">
+          <i class="fa-solid fa-file-export"></i> Export <i class="fa-solid fa-chevron-down" style="font-size:10px;"></i>
+        </button>
+        <div class="dropdown-menu" id="export-menu">
+          <button class="dropdown-item" id="btn-export-html">
+            <i class="fa-solid fa-file-code" style="color:#10b981;"></i>
+            <div><strong>Export to HTML</strong><br><small>Interactive standalone web presentation</small></div>
+          </button>
+          <button class="dropdown-item" id="btn-export-pdf">
+            <i class="fa-solid fa-file-pdf" style="color:#ef4444;"></i>
+            <div><strong>Export to PDF (HD)</strong><br><small>Multi-page print-ready document</small></div>
+          </button>
+          <button class="dropdown-item" id="btn-export-png">
+            <i class="fa-solid fa-file-image" style="color:#38bdf8;"></i>
+            <div><strong>Current Slide (PNG)</strong><br><small>High-resolution image</small></div>
+          </button>
+          <button class="dropdown-item" id="btn-export-zip">
+            <i class="fa-solid fa-file-zipper" style="color:#f59e0b;"></i>
+            <div><strong>All Slides (ZIP)</strong><br><small>Compressed bundle of PNG slides</small></div>
+          </button>
+        </div>
+      </div>
+
+      <button id="btn-toggle-theme" class="btn btn-icon" title="Switch UI Theme (UdeS Emerald / Black &amp; Gold)">
+        <i class="fa-solid fa-palette"></i>
+      </button>
+
+      <button id="btn-help-shortcuts" class="btn btn-icon" title="Keyboard Shortcuts (?)">
+        <i class="fa-solid fa-circle-question"></i>
+      </button>
+
+      <!-- Presenter Button -->
+      <button id="btn-present-main" class="btn btn-primary" title="Start Fullscreen Slideshow">
+        <i class="fa-solid fa-play"></i> Present
+      </button>
+    </div>
+  </header>
+
+  <!-- 2. Ribbon Toolbar (Quick Actions & Inserters) -->
+  <nav id="ribbon-toolbar">
+    <!-- Undo / Redo -->
+    <div class="ribbon-group">
+      <button id="btn-undo" class="btn-icon" title="Undo (Ctrl+Z)"><i class="fa-solid fa-arrow-rotate-left"></i></button>
+      <button id="btn-redo" class="btn-icon" title="Redo (Ctrl+Y)"><i class="fa-solid fa-arrow-rotate-right"></i></button>
+    </div>
+
+    <div class="ribbon-divider"></div>
+
+    <!-- Regular Slide Inserters (Standard Slide Mode) -->
+    <div id="ribbon-slide-tools" class="ribbon-mode-group">
+      <!-- Text Inserters -->
+      <div class="ribbon-group">
+        <button id="btn-insert-title" class="ribbon-btn" title="Insert Title Heading"><i class="fa-solid fa-heading"></i> Title</button>
+        <button id="btn-insert-subtitle" class="ribbon-btn" title="Insert Subtitle"><i class="fa-solid fa-font"></i> Subtitle</button>
+        <button id="btn-insert-text" class="ribbon-btn" title="Insert Text Box"><i class="fa-solid fa-paragraph"></i> Text</button>
+        <button id="btn-insert-bullets" class="ribbon-btn" title="Insert Bulleted List"><i class="fa-solid fa-list-ul"></i> List</button>
+      </div>
+
+      <div class="ribbon-divider"></div>
+
+      <!-- Shapes & Visuals -->
+      <div class="ribbon-group">
+        <!-- Shape Dropdown -->
+        <div class="dropdown-wrap">
+          <button id="btn-insert-shape-dropdown" class="ribbon-btn" title="Choose and Insert Vector Shape">
+            <i class="fa-solid fa-shapes"></i> Shapes <i class="fa-solid fa-chevron-down" style="font-size:10px;"></i>
+          </button>
+          <div class="dropdown-menu" id="shape-picker-menu"></div>
+        </div>
+
+        <!-- Image Upload -->
+        <input type="file" id="image-upload-input" accept="image/*" style="display:none;">
+        <button id="btn-insert-image" class="ribbon-btn" title="Upload and Insert Image">
+          <i class="fa-solid fa-image"></i> Image
+        </button>
+
+        <!-- UdeS Logos Dropdown -->
+        <div class="dropdown-wrap">
+          <button id="btn-logo-dropdown" class="ribbon-btn" title="Insert Official UdeS Logo">
+            <i class="fa-solid fa-shield-halved"></i> UdeS Logos <i class="fa-solid fa-chevron-down" style="font-size:10px;"></i>
+          </button>
+          <div class="dropdown-menu" id="logo-menu" style="min-width: 140px;">
+            <button class="dropdown-item" id="btn-insert-logo-dark" style="justify-content: center; padding: 8px 12px;" title="Official UdeS Logo (Vector SVG)">
+              <img id="img-logo-dropdown-badge" src="assets/logo_uds_b.png" height="28" alt="Logo UdeS">
+            </button>
+            <button class="dropdown-item" id="btn-insert-logo-light" style="justify-content: center; padding: 8px 12px;" title="Official UdeS Emblem (Vector SVG)">
+              <img id="img-logo-dropdown-emblem" src="assets/logo_uds_a.avif" height="32" alt="Logo UdeS">
+            </button>
+          </div>
+        </div>
+
+        <button id="btn-insert-line" class="ribbon-btn" title="Insert Line or Divider">
+          <i class="fa-solid fa-minus"></i> Line
+        </button>
+      </div>
+
+      <div class="ribbon-divider"></div>
+
+      <!-- Advanced Objects -->
+      <div class="ribbon-group">
+        <button id="btn-insert-icon" class="ribbon-btn" title="Insert Vector Icon">
+          <i class="fa-solid fa-icons"></i> Icon
+        </button>
+        <button id="btn-insert-table" class="ribbon-btn" title="Insert Data Table">
+          <i class="fa-solid fa-table"></i> Table
+        </button>
+        <button id="btn-insert-chart" class="ribbon-btn" title="Insert Dynamic Chart">
+          <i class="fa-solid fa-chart-pie"></i> Chart
+        </button>
+        <button id="btn-insert-html" class="ribbon-btn" title="Insert Self-Contained HTML Code">
+          <i class="fa-solid fa-code"></i> HTML
+        </button>
+        <button id="btn-insert-zoom-flow" class="ribbon-btn" title="Create Zoom-In Flow Diagram Presentation" style="color:var(--udes-lime);font-weight:600;">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Zoom Flow
+        </button>
+      </div>
+    </div>
+
+    <!-- Flow Diagram Editing Tools (Flow Diagram Slide Mode) -->
+    <div id="ribbon-flow-tools" class="ribbon-mode-group" style="display:none;">
+      <span class="ribbon-flow-badge">
+        <i class="fa-solid fa-diagram-project"></i> Flow Diagram Editing
+      </span>
+
+      <button id="btn-flow-add-node" class="btn btn-primary btn-sm" title="Add New Node / Step to Flow">
+        <i class="fa-solid fa-plus"></i> Add Node
+      </button>
+
+      <div class="ribbon-divider"></div>
+
+      <button id="btn-flow-snap-grid" class="ribbon-btn active" title="Snap to Grid: ON (Press G to toggle)">
+        <i class="fa-solid fa-border-all"></i> Snap to Grid
+      </button>
+
+      <div class="ribbon-divider"></div>
+
+      <div class="ribbon-group">
+        <span class="ribbon-mode-label"><i class="fa-solid fa-palette" style="color:var(--udes-lime);"></i> Theme:</span>
+        <select id="ribbon-flow-theme" class="ctx-select" title="Visual Theme">
+          <option value="udes-emerald">UdeS Emerald</option>
+          <option value="black-gold">Obsidian &amp; Gold</option>
+          <option value="cyber-dark">Tech Dark / Cyber</option>
+          <option value="ocean-teal">Oceanic Teal</option>
+          <option value="glass-light">Clean Glass</option>
+        </select>
+      </div>
+
+      <div class="ribbon-divider"></div>
+
+      <button id="btn-flow-overview" class="ribbon-btn" title="Center Diagram Overview">
+        <i class="fa-solid fa-compress"></i> Overview
+      </button>
+    </div>
+  </nav>
+
+  <!-- 3. Contextual Formatting Bar (Updates on Selection) -->
+  <div id="contextual-formatting-bar" class="is-disabled">
+    <!-- Text Formatting Controls -->
+    <div class="ctx-group" id="ctx-group-text">
+      <select id="ctx-font-family" class="ctx-select" title="Font Family"></select>
+      
+      <div style="display:flex;align-items:center;gap:2px;">
+        <button id="ctx-btn-font-minus" class="ctx-btn" title="Decrease Font Size"><i class="fa-solid fa-minus"></i></button>
+        <input type="number" id="ctx-font-size" class="ctx-number-input" value="18" min="8" max="144" title="Font Size (px)">
+        <button id="ctx-btn-font-plus" class="ctx-btn" title="Increase Font Size"><i class="fa-solid fa-plus"></i></button>
+      </div>
+
+      <div class="ribbon-divider"></div>
+
+      <button id="ctx-btn-bold" class="ctx-btn" title="Bold (Ctrl+B)"><i class="fa-solid fa-bold"></i></button>
+      <button id="ctx-btn-italic" class="ctx-btn" title="Italic (Ctrl+I)"><i class="fa-solid fa-italic"></i></button>
+      <button id="ctx-btn-underline" class="ctx-btn" title="Underline (Ctrl+U)"><i class="fa-solid fa-underline"></i></button>
+
+      <div class="ribbon-divider"></div>
+
+      <button id="ctx-btn-align-left" class="ctx-btn" title="Align Left"><i class="fa-solid fa-align-left"></i></button>
+      <button id="ctx-btn-align-center" class="ctx-btn" title="Align Center"><i class="fa-solid fa-align-center"></i></button>
+      <button id="ctx-btn-align-right" class="ctx-btn" title="Align Right"><i class="fa-solid fa-align-right"></i></button>
+      <button id="ctx-btn-align-justify" class="ctx-btn" title="Justify"><i class="fa-solid fa-align-justify"></i></button>
+
+      <div class="ribbon-divider"></div>
+
+      <!-- Lists & Levels / Indentation -->
+      <button id="ctx-btn-list-ul" class="ctx-btn" title="Bulleted List"><i class="fa-solid fa-list-ul"></i></button>
+      <button id="ctx-btn-list-ol" class="ctx-btn" title="Numbered List"><i class="fa-solid fa-list-ol"></i></button>
+      <button id="ctx-btn-outdent" class="ctx-btn" title="Decrease Level / Outdent (Shift+Tab)"><i class="fa-solid fa-outdent"></i></button>
+      <button id="ctx-btn-indent" class="ctx-btn" title="Increase Level / Indent (Tab)"><i class="fa-solid fa-indent"></i></button>
+
+      <div class="ribbon-divider"></div>
+
+      <!-- Text Color Picker & Brand Swatches -->
+      <div class="dropdown-wrap" style="display:flex;align-items:center;gap:2px;">
+        <label class="ctx-color-label" title="Text Color">
+          <i class="fa-solid fa-font" style="color:var(--text-primary);"></i>
+          <input type="color" id="ctx-text-color" value="#0F172A">
+        </label>
+        <button id="ctx-btn-text-swatches" class="ctx-btn" style="width:20px;padding:0;" title="UdeS Brand Color Swatches">
+          <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i>
+        </button>
+        <div class="dropdown-menu color-swatch-popover" id="ctx-text-swatch-menu"></div>
+      </div>
+
+      <!-- Sync Title Style Button (Active when a Title is selected) -->
+      <button id="ctx-btn-sync-title" class="ctx-btn" title="Sync this title style (font, size, color, align) to all slides" style="display:none;font-size:11px;padding:3px 9px;gap:5px;background:rgba(var(--accent-bright-rgb),0.15);border:1px solid var(--udes-lime);color:var(--udes-lime);border-radius:4px;">
+        <i class="fa-solid fa-arrows-rotate"></i>
+        <span>Sync Title to All Slides</span>
+      </button>
+    </div>
+
+    <!-- Shape Formatting Controls -->
+    <div class="ctx-group" id="ctx-group-shape" style="display:none;">
+      <div class="dropdown-wrap" style="display:flex;align-items:center;gap:2px;">
+        <label class="ctx-color-label" title="Shape Fill Color">
+          <i class="fa-solid fa-fill-drip" style="color:var(--udes-green);"></i>
+          <input type="color" id="ctx-fill-color" value="#00A350">
+        </label>
+        <button id="ctx-btn-fill-swatches" class="ctx-btn" style="width:20px;padding:0;" title="UdeS Brand Fill Swatches">
+          <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i>
+        </button>
+        <div class="dropdown-menu color-swatch-popover" id="ctx-fill-swatch-menu"></div>
+      </div>
+    </div>
+
+    <!-- Layering, Alignment & Element Actions -->
+    <div class="ctx-group" id="ctx-group-layering" style="display:none;margin-left:auto;">
+      <div class="dropdown-wrap">
+        <button id="ctx-btn-align-dropdown" class="ctx-btn" style="width:auto;padding:0 8px;gap:5px;font-size:12px;" title="Align & Distribute Elements">
+          <i class="fa-solid fa-objects-align-center-horizontal fa-align-center"></i>
+          <span>Align</span>
+          <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i>
+        </button>
+        <div class="dropdown-menu align-dropdown-menu" id="ctx-align-menu" style="right:0;left:auto;">
+          <button class="dropdown-item" data-align="left"><i class="fa-solid fa-align-left"></i> Align Left</button>
+          <button class="dropdown-item" data-align="center-h"><i class="fa-solid fa-align-center"></i> Center Horizontally</button>
+          <button class="dropdown-item" data-align="right"><i class="fa-solid fa-align-right"></i> Align Right</button>
+          <div class="ctx-menu-divider"></div>
+          <button class="dropdown-item" data-align="top"><i class="fa-solid fa-arrow-up-to-line fa-arrow-up"></i> Align Top</button>
+          <button class="dropdown-item" data-align="center-v"><i class="fa-solid fa-arrows-up-down"></i> Center Vertically</button>
+          <button class="dropdown-item" data-align="bottom"><i class="fa-solid fa-arrow-down-to-line fa-arrow-down"></i> Align Bottom</button>
+          <div class="ctx-menu-divider"></div>
+          <button class="dropdown-item" data-align="distribute-h"><i class="fa-solid fa-arrows-left-right"></i> Distribute Horizontally (3+)</button>
+          <button class="dropdown-item" data-align="distribute-v"><i class="fa-solid fa-arrows-up-down"></i> Distribute Vertically (3+)</button>
+        </div>
+      </div>
+      <div class="ribbon-divider"></div>
+      <button id="ctx-btn-bring-front" class="ctx-btn" title="Bring to Front"><i class="fa-solid fa-angles-up"></i></button>
+      <button id="ctx-btn-send-back" class="ctx-btn" title="Send to Back"><i class="fa-solid fa-angles-down"></i></button>
+      <button id="ctx-btn-duplicate" class="ctx-btn" title="Duplicate Element (Ctrl+D)"><i class="fa-solid fa-copy"></i></button>
+      <button id="ctx-btn-delete" class="ctx-btn" style="color:var(--accent-rose);" title="Delete Element (Delete)"><i class="fa-solid fa-trash-can"></i></button>
+    </div>
+  </div>
+
+  <!-- 4. Workspace Area (Left Sidebar + Center Canvas Stage + Right Inspector) -->
+  <div id="workspace-area">
+
+    <!-- Left Sidebar: Slides Navigator -->
+    <aside id="sidebar-slides">
+      <div class="sidebar-header">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button id="btn-toggle-left-sidebar" class="sidebar-collapse-btn" title="Collapse Slides Panel">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+          <h4>Slides</h4>
+        </div>
+        <button id="btn-new-slide-main" class="btn btn-sm btn-primary" title="Add New Slide (Choose Background)">
+          <i class="fa-solid fa-plus"></i> Slide
+        </button>
+      </div>
+
+      <!-- Slide Thumbnails Strip -->
+      <div class="slide-thumbnails-list" id="slide-thumbnails-list"></div>
+
+      <!-- Presenter Notes Drawer -->
+      <div id="presenter-notes-drawer" class="is-collapsed">
+        <div class="notes-drawer-header" id="btn-toggle-notes" title="Toggle Presenter Notes">
+          <h5><i class="fa-solid fa-note-sticky" style="color:var(--udes-lime);"></i> Presenter Notes</h5>
+          <i class="fa-solid fa-chevron-up"></i>
+        </div>
+        <textarea id="slide-notes-input" class="slide-notes-textarea" placeholder="Type speaker notes for this slide... Visible during presentation mode."></textarea>
+      </div>
+    </aside>
+
+    <!-- Center Stage: Presentation Canvas Viewport -->
+    <main id="slide-viewport">
+      <!-- Floating Expand Left Sidebar Button (visible when collapsed) -->
+      <button id="btn-expand-left-sidebar" class="sidebar-expand-btn is-hidden" title="Expand Slides Panel">
+        <i class="fa-solid fa-table-cells"></i>
+      </button>
+
+      <!-- Floating Expand Inspector Button (visible when collapsed) -->
+      <button id="btn-expand-inspector" class="inspector-expand-btn is-hidden" title="Expand Inspector Panel">
+        <i class="fa-solid fa-sliders"></i>
+      </button>
+
+      <div id="slide-stage-wrapper" class="slide-stage-wrapper">
+        <div id="slide-stage">
+          <!-- Background Layer -->
+          <div id="slide-background" class="slide-background"></div>
+          <!-- Elements Layer -->
+          <div id="slide-elements-layer"></div>
+          <!-- Selection Overlays & Snap Guides -->
+          <div id="selection-overlay"></div>
+          <div id="marquee-box"></div>
+          <div id="alignment-guides"></div>
+        </div>
+      </div>
+
+      <!-- Floating Bottom Zoom Bar -->
+      <div class="stage-floating-controls">
+        <span id="slide-counter-badge" style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-right:6px;">1 / 1</span>
+        <div class="ribbon-divider" style="height:16px;"></div>
+        <button id="btn-zoom-out" class="btn-icon" style="width:26px;height:26px;" title="Zoom Out"><i class="fa-solid fa-minus" style="font-size:10px;"></i></button>
+        <span id="zoom-percentage" class="zoom-text">100%</span>
+        <button id="btn-zoom-in" class="btn-icon" style="width:26px;height:26px;" title="Zoom In"><i class="fa-solid fa-plus" style="font-size:10px;"></i></button>
+        <button id="btn-zoom-fit" class="btn-icon" style="width:26px;height:26px;" title="Fit to Screen"><i class="fa-solid fa-expand" style="font-size:11px;"></i></button>
+      </div>
+    </main>
+
+    <!-- Right Inspector Panel -->
+    <aside id="inspector-panel">
+      <!-- Tabs Header -->
+      <div class="inspector-tabs-header">
+        <button class="inspector-tab-btn" data-tab="flow" id="tab-btn-flow" style="display:none;">
+          <i class="fa-solid fa-diagram-project"></i> Flow
+        </button>
+        <button class="inspector-tab-btn is-active" data-tab="background" id="tab-btn-background">
+          <i class="fa-solid fa-image"></i> Background
+        </button>
+        <button class="inspector-tab-btn" data-tab="properties" id="tab-btn-properties">
+          <i class="fa-solid fa-sliders"></i> Properties
+        </button>
+        <button class="inspector-tab-btn" data-tab="settings" id="tab-btn-settings">
+          <i class="fa-solid fa-gear"></i> Slide
+        </button>
+        <button id="btn-toggle-inspector" class="inspector-collapse-btn" title="Collapse Inspector Panel">
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+
+      <div class="inspector-content">
+        <!-- Tab 0: Flow Diagram Editor (Active when on a Zoom Flow Slide) -->
+        <div class="inspector-tab-pane" id="tab-pane-flow">
+          <div id="flow-inspector-content"></div>
+        </div>
+
+        <!-- Tab 1: Backgrounds Gallery (PDF Pages 1..6, Colors, Gradients) -->
+        <div class="inspector-tab-pane is-active" id="tab-pane-background">
+          <div id="background-panel-content"></div>
+        </div>
+
+        <!-- Tab 2: Element Properties (Synced on element selection) -->
+        <div class="inspector-tab-pane" id="tab-pane-properties"></div>
+
+        <!-- Tab 3: Slide Settings (Aspect ratio & themes) -->
+        <div class="inspector-tab-pane" id="tab-pane-settings">
+          <div class="panel-section">
+            <div class="section-header">
+              <h4><i class="fa-solid fa-display"></i> Slide Format & Aspect Ratio</h4>
+            </div>
+            <div class="prop-field">
+              <label>Aspect Ratio</label>
+              <select id="slide-aspect-ratio-select" class="prop-select">
+                <option value="16_9" selected>16:9 Widescreen (1280×720)</option>
+                <option value="a4_landscape">A4 Landscape (PDF Template 842×595)</option>
+                <option value="4_3">4:3 Standard (1024×768)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="panel-section">
+            <div class="section-header">
+              <h4><i class="fa-solid fa-palette" style="color:var(--udes-lime);"></i> Studio &amp; Presentation Theme</h4>
+            </div>
+            <div class="prop-field">
+              <label>Editor UI Theme</label>
+              <select id="ui-theme-select" class="prop-select">
+                <option value="udes-emerald">UdeS Emerald (Default)</option>
+                <option value="black-gold">Black &amp; Gold (Obsidian)</option>
+              </select>
+            </div>
+            <div class="prop-field" style="margin-top:10px;">
+              <label>Presentation Slide Theme</label>
+              <select id="presentation-theme-select" class="prop-select">
+                <option value="udes-emerald">UdeS Emerald</option>
+                <option value="black-gold">Black &amp; Gold (Obsidian)</option>
+              </select>
+            </div>
+            <button id="btn-apply-presentation-theme" class="btn btn-primary btn-sm btn-full" style="margin-top:10px;">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Apply Theme to All Slides
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+</div>
+
+<!-- --- Modals --- -->
+
+<!-- 0. New Slide Background & Layout Picker Modal -->
+<div class="modal-backdrop" id="modal-new-slide">
+  <div class="modal-card" style="max-width: 820px; width: 94%;">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-layer-group" style="color:var(--udes-lime);"></i> Add New Slide</h3>
+      <button class="modal-close-btn">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="new-slide-modal-grid" id="new-slide-modal-grid"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary modal-close-btn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- 1. Icon Picker Modal -->
+<div class="modal-backdrop" id="modal-icons">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-icons" style="color:var(--udes-green);"></i> Vector Icon Library</h3>
+      <button class="modal-close-btn">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="text" id="modal-icon-search" class="prop-input" placeholder="Search icon (e.g. brain, lightbulb, chart, graduation)...">
+      <div class="modal-icon-grid" id="modal-icon-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Table Inserter Modal -->
+<div class="modal-backdrop" id="modal-table">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-table" style="color:var(--udes-green);"></i> Insert Table</h3>
+      <button class="modal-close-btn">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="prop-grid-2">
+        <div class="prop-field">
+          <label>Number of Rows</label>
+          <input type="number" id="table-input-rows" class="prop-input" value="3" min="1" max="15">
+        </div>
+        <div class="prop-field">
+          <label>Number of Columns</label>
+          <input type="number" id="table-input-cols" class="prop-input" value="3" min="1" max="10">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary modal-close-btn">Cancel</button>
+      <button class="btn btn-primary" id="btn-modal-insert-table"><i class="fa-solid fa-plus"></i> Create Table</button>
+    </div>
+  </div>
+</div>
+
+<!-- 3. Chart Inserter Modal -->
+<div class="modal-backdrop" id="modal-chart">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-chart-pie" style="color:var(--udes-green);"></i> Insert Dynamic Chart</h3>
+      <button class="modal-close-btn">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="prop-field">
+        <label>Chart Title</label>
+        <input type="text" id="chart-title-input" class="prop-input" value="Annual Indicators & Performance">
+      </div>
+      <div class="prop-field">
+        <label>Visualization Type</label>
+        <select id="chart-type-select" class="prop-select">
+          <option value="bar">Bar Chart (Histogram)</option>
+          <option value="line">Line Chart (Trend)</option>
+          <option value="pie">Pie Chart (Slices)</option>
+          <option value="doughnut">Doughnut Chart (Ring)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary modal-close-btn">Cancel</button>
+      <button class="btn btn-primary" id="btn-modal-insert-chart"><i class="fa-solid fa-plus"></i> Insert Chart</button>
+    </div>
+  </div>
+</div>
+
+<!-- 4. Keyboard Shortcuts Cheat Sheet Modal -->
+<div class="modal-backdrop" id="modal-shortcuts">
+  <div class="modal-card" style="max-width:600px;">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-keyboard" style="color:var(--udes-lime);"></i> SlideMAKER Keyboard Shortcuts</h3>
+      <button class="modal-close-btn">&times;</button>
+    </div>
+    <div class="modal-body">
+      <table style="width:100%;font-size:13px;border-collapse:collapse;">
+        <tr style="border-bottom:1px solid var(--border-subtle);"><td style="padding:7px 0;"><strong>F5</strong></td><td>Start Fullscreen Slideshow</td></tr>
+        <tr style="border-bottom:1px solid var(--border-subtle);"><td style="padding:7px 0;"><strong>Arrow Keys / Space</strong></td><td>Next / Previous Slide (in slideshow)</td></tr>
+        <tr style="border-bottom:1px solid var(--border-subtle);"><td style="padding:7px 0;"><strong>L / N Key</strong> (in slideshow)</td><td>Toggle Laser Pointer / Speaker Notes</td></tr>
+        <tr style="border-bottom:1px solid var(--border-subtle);"><td style="padding:7px 0;"><strong>Ctrl + Z / Ctrl + Y</strong></td><td>Undo / Redo</td></tr>
+        <tr style="border-bottom:1px solid var(--border-subtle);"><td style="padding:7px 0;"><strong>Ctrl + C / Ctrl + V</strong></td><td>Copy / Paste Elements (or Paste Image from Clipboard)</td></tr>
+        <tr style="border-bottom:1px solid var(--border-subtle);"><td style="padding:7px 0;"><strong>Ctrl + D / Ctrl + A</strong></td><td>Duplicate Selected / Select All Elements</td></tr>
+        <tr style="border-bottom:1px solid var(--border-subtle);"><td style="padding:7px 0;"><strong>Ctrl + B / I / U</strong></td><td>Bold / Italic / Underline Selected Text</td></tr>
+        <tr style="border-bottom:1px solid var(--border-subtle);"><td style="padding:7px 0;"><strong>Ctrl + Wheel / + / - / 0</strong></td><td>Zoom In / Zoom Out / Fit to Screen</td></tr>
+        <tr style="border-bottom:1px solid var(--border-subtle);"><td style="padding:7px 0;"><strong>Space + Drag</strong></td><td>Pan Canvas when Zoomed In</td></tr>
+        <tr style="border-bottom:1px solid var(--border-subtle);"><td style="padding:7px 0;"><strong>Right-Click</strong></td><td>Quick Context Menu on Canvas &amp; Elements</td></tr>
+        <tr style="border-bottom:1px solid var(--border-subtle);"><td style="padding:7px 0;"><strong>Arrow Keys (+ Shift)</strong></td><td>Nudge Element (1px or 10px)</td></tr>
+        <tr style="border-bottom:1px solid var(--border-subtle);"><td style="padding:7px 0;"><strong>Delete / Backspace</strong></td><td>Delete Selected Element(s)</td></tr>
+        <tr style="border-bottom:1px solid var(--border-subtle);"><td style="padding:7px 0;"><strong>Double-Click Text</strong></td><td>Inline Text Editing directly on Slide</td></tr>
+        <tr><td style="padding:7px 0;"><strong>? / Esc</strong></td><td>Open Shortcuts / Close Modals &amp; Menus</td></tr>
+      </table>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary modal-close-btn">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- 5. Self-Contained HTML File Selector & Drop Zone Modal -->
+<div class="modal-backdrop" id="modal-insert-html">
+  <div class="modal-card" style="max-width:560px;">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-file-code" style="color:var(--udes-lime);"></i> Select or Drop HTML File</h3>
+      <button class="modal-close-btn">&times;</button>
+    </div>
+    <div class="modal-body" style="padding:16px;">
+      <!-- Drag & Drop Zone -->
+      <div id="html-drop-zone" class="file-drop-zone" style="border: 2px dashed var(--border-strong); border-radius: 12px; padding: 32px 20px; text-align: center; background: var(--bg-surface); cursor: pointer; transition: all 0.2s ease;">
+        <i class="fa-solid fa-cloud-arrow-up" style="font-size: 42px; color: var(--udes-lime); margin-bottom: 12px; display: block;"></i>
+        <h4 style="font-size: 15px; font-weight: 600; margin-bottom: 6px; color: var(--text-primary);">Drag & Drop `.html` or `.svg` file here</h4>
+        <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 16px;">or click anywhere in this box to browse</p>
+        
+        <label class="btn btn-primary btn-sm" style="display: inline-flex; cursor: pointer; pointer-events: none;">
+          <i class="fa-solid fa-folder-open"></i> Choose HTML File
+        </label>
+      </div>
+      <input type="file" id="file-input-html-upload" accept=".html,.htm,.svg" style="display:none;">
+
+      <!-- Collapsible Textarea Code Accordion for pasting text -->
+      <details style="margin-top: 16px;">
+        <summary style="font-size: 12.5px; color: var(--text-secondary); cursor: pointer; user-select: none;">
+          <i class="fa-solid fa-code"></i> Or paste HTML code manually...
+        </summary>
+        <div style="margin-top: 10px;">
+          <textarea id="input-html-code" class="code-textarea" style="width:100%;height:140px;font-family:'Fira Code',monospace;font-size:12px;padding:10px;background:#090d16;color:#38bdf8;border:1px solid var(--border-strong);border-radius:6px;outline:none;resize:vertical;" placeholder="<div style='padding:20px;background:#00A350;color:#fff;'>HTML code...</div>"></textarea>
+        </div>
+      </details>
+    </div>
+    <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:8px;">
+      <button class="btn btn-secondary modal-close-btn">Cancel</button>
+      <button id="btn-confirm-insert-html" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Insert Content</button>
+    </div>
+  </div>
+</div>
+
+<!-- 6. Zoom Flow Presentation Studio & Generator Modal -->
+<div class="modal-backdrop" id="modal-zoom-flow">
+  <div class="modal-card modal-card-zoom-flow">
+    <!-- Header -->
+    <div class="zf-modal-header">
+      <h3>
+        <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--udes-lime);"></i>
+        <span>Zoom Flow Studio</span>
+        <span class="zf-badge">Interactive Mode</span>
+      </h3>
+      <button class="modal-close-btn" id="btn-close-zoom-flow">&times;</button>
+    </div>
+
+    <!-- Body: 2 Columns (Controls / Generator + Live Interactive Viewport) -->
+    <div class="zf-modal-body">
+      <!-- Left Column: Controls & Presets -->
+      <div class="zf-controls-sidebar">
+        <!-- 1. Diagram Title -->
+        <div>
+          <div class="zf-section-title">
+            <i class="fa-solid fa-heading" style="color:var(--udes-lime);"></i>
+            <span>Diagram Title</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <input type="text" id="zf-title-input" class="zf-select" placeholder="Enter diagram title..." value="Flow Diagram" style="font-size:12.5px;padding:8px 12px;color:#fff;">
+            <input type="text" id="zf-subtitle-input" class="zf-select" placeholder="Optional Subtitle" style="font-size:11.5px;padding:7px 12px;color:#94a3b8;">
+          </div>
+        </div>
+
+        <!-- 3. Visual Theme -->
+        <div>
+          <div class="zf-section-title">
+            <i class="fa-solid fa-palette" style="color:var(--accent-amber);"></i>
+            <span>Visual Theme</span>
+          </div>
+          <div class="zf-options-grid">
+            <div class="zf-select-field" style="grid-column:span 2;">
+              <label>Theme</label>
+              <select id="zf-theme-select" class="zf-select">
+                <option value="udes-emerald" selected>UdeS Emerald</option>
+                <option value="black-gold">Obsidian &amp; Gold</option>
+                <option value="cyber-dark">Tech Dark / Cyber</option>
+                <option value="ocean-teal">Oceanic Teal</option>
+                <option value="glass-light">Clean Glass</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Node List & Quick Editor -->
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div class="zf-section-title" style="margin-bottom:0;">
+              <i class="fa-solid fa-list-ol" style="color:var(--udes-lime);"></i>
+              <span>Diagram Nodes (<span id="zf-nodes-count">5</span>)</span>
+            </div>
+            <button id="zf-btn-add-node" class="btn btn-secondary btn-sm" style="padding:3px 8px;font-size:11px;">
+              <i class="fa-solid fa-plus"></i> Add Node
+            </button>
+          </div>
+          <div class="zf-nodes-list" id="zf-nodes-list"></div>
+        </div>
+      </div>
+
+      <!-- Right Column: Live Interactive Preview Viewport -->
+      <div class="zf-preview-viewport">
+        <!-- Floating Interactive Stepper -->
+        <div class="zf-preview-toolbar">
+          <button id="zf-prev-node-btn" class="zf-toolbar-btn" title="Previous Node (Arrow Left)"><i class="fa-solid fa-chevron-left"></i></button>
+          <span id="zf-current-node-label" class="zf-toolbar-text">Full Diagram Overview</span>
+          <button id="zf-next-node-btn" class="zf-toolbar-btn" title="Next Node (Arrow Right)"><i class="fa-solid fa-chevron-right"></i></button>
+          <div class="ribbon-divider" style="height:14px;background:rgba(255,255,255,0.2);"></div>
+          <button id="zf-overview-btn" class="btn btn-secondary btn-sm" style="padding:3px 8px;font-size:11px;" title="Zoom Out to Overview">
+            <i class="fa-solid fa-expand"></i> Overview
+          </button>
+        </div>
+
+        <!-- Live Preview Stage Container -->
+        <div class="zf-preview-canvas-container" id="zf-preview-stage"></div>
+      </div>
+    </div>
+
+    <!-- Footer Actions -->
+    <div class="zf-modal-footer">
+      <div style="font-size:12px;color:var(--text-secondary);">
+        <i class="fa-solid fa-circle-info" style="color:var(--udes-lime);margin-right:6px;"></i>
+        Click any node in the preview to test the zoom-in camera!
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-secondary modal-close-btn">Cancel</button>
+        <button id="zf-btn-insert-slide" class="btn btn-primary">
+          <i class="fa-solid fa-plus"></i> Insert as Interactive Slide
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Application JavaScript Modules -->
+<script src="js/backgrounds-base64.js?v=2.5"></script>
+<script src="js/config.js?v=2.11"></script>
+<script src="js/state.js?v=2.9"></script>
+<script src="js/element-factory.js?v=2.9"></script>
+<script src="js/transform-manager.js?v=2.5"></script>
+<script src="js/canvas-engine.js?v=2.5"></script>
+<script src="js/background-manager.js?v=2.5"></script>
+<script src="js/slide-manager.js?v=2.5"></script>
+<script src="js/export-engine.js?v=2.5"></script>
+<script src="js/zoom-flow-engine.js?v=2.5"></script>
+<script src="js/presenter-engine.js?v=2.5"></script>
+<script src="js/app.js?v=2.9"></script>
+
+</body>
+</html>

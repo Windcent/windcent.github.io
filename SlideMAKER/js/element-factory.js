@@ -1,0 +1,331 @@
+/**
+ * SlideMAKER - Element Factory
+ * Creates structured element definitions for Text, Shapes, Images, Tables, Icons, Charts, and Lines
+ */
+
+const ElementFactory = {
+  isBlackGold() {
+    return !!(window.state && window.state.presentationTheme === 'black-gold');
+  },
+
+  // 1. Text Elements
+  createTitle(custom = {}) {
+    const globalStyle = (window.state && window.state.titleStyle) || {};
+    const bgGold = this.isBlackGold();
+    return {
+      ...(custom.id ? { id: custom.id } : {}),
+      type: 'text',
+      textType: 'title',
+      x: custom.x || 80,
+      y: custom.y || 80,
+      width: custom.width || 750,
+      height: custom.height || 100,
+      content: custom.content || 'Presentation Title',
+      fontFamily: custom.fontFamily || globalStyle.fontFamily || 'JetBrains Mono',
+      fontSize: custom.fontSize || globalStyle.fontSize || 44,
+      fontWeight: custom.fontWeight || globalStyle.fontWeight || '700',
+      fontStyle: custom.fontStyle || globalStyle.fontStyle || 'normal',
+      textDecoration: custom.textDecoration || globalStyle.textDecoration || 'none',
+      color: custom.color || (bgGold ? '#F5D061' : (globalStyle.color || CONFIG.colors.udesDark)),
+      textAlign: custom.textAlign || globalStyle.textAlign || 'left',
+      lineHeight: custom.lineHeight || globalStyle.lineHeight || 1.2,
+      letterSpacing: custom.letterSpacing !== undefined ? custom.letterSpacing : (globalStyle.letterSpacing || 0),
+      backgroundColor: 'transparent',
+      padding: 12,
+      borderWidth: 0,
+      borderColor: 'transparent',
+      borderRadius: 0,
+      shadow: 'none',
+      opacity: 1
+    };
+  },
+
+  createSubtitle(custom = {}) {
+    return {
+      ...(custom.id ? { id: custom.id } : {}),
+      type: 'text',
+      textType: 'subtitle',
+      x: custom.x || 80,
+      y: custom.y || 190,
+      width: custom.width || 650,
+      height: custom.height || 60,
+      content: custom.content || 'Explanatory subtitle or section name',
+      fontFamily: custom.fontFamily || 'JetBrains Mono',
+      fontSize: custom.fontSize || 24,
+      fontWeight: custom.fontWeight || '500',
+      fontStyle: custom.fontStyle || 'normal',
+      textDecoration: custom.textDecoration || 'none',
+      color: custom.color || (this.isBlackGold() ? '#D4AF37' : CONFIG.colors.udesSlate),
+      textAlign: custom.textAlign || 'left',
+      lineHeight: 1.3,
+      letterSpacing: 0,
+      backgroundColor: 'transparent',
+      padding: 8,
+      borderWidth: 0,
+      borderColor: 'transparent',
+      borderRadius: 0,
+      shadow: 'none',
+      opacity: 1
+    };
+  },
+
+  createText(custom = {}) {
+    return {
+      ...(custom.id ? { id: custom.id } : {}),
+      type: 'text',
+      textType: 'body',
+      x: custom.x || 80,
+      y: custom.y || 260,
+      width: custom.width || 600,
+      height: custom.height || 160,
+      content: custom.content || 'Type your content here. You can format text with bold, italic, customize fonts, sizes, and colors according to the brand guidelines.',
+      fontFamily: custom.fontFamily || 'JetBrains Mono',
+      fontSize: custom.fontSize || 18,
+      fontWeight: custom.fontWeight || '400',
+      fontStyle: custom.fontStyle || 'normal',
+      textDecoration: custom.textDecoration || 'none',
+      color: custom.color || (this.isBlackGold() ? '#FAF8F2' : CONFIG.colors.udesBlack),
+      textAlign: custom.textAlign || 'left',
+      lineHeight: custom.lineHeight || 1.5,
+      letterSpacing: custom.letterSpacing || 0,
+      backgroundColor: custom.backgroundColor || 'transparent',
+      padding: custom.padding !== undefined ? custom.padding : 10,
+      borderWidth: 0,
+      borderColor: 'transparent',
+      borderRadius: 0,
+      shadow: 'none',
+      opacity: 1
+    };
+  },
+
+  createBulletList(custom = {}) {
+    return {
+      ...(custom.id ? { id: custom.id } : {}),
+      type: 'text',
+      textType: 'bullets',
+      x: custom.x || 80,
+      y: custom.y || 230,
+      width: custom.width || 620,
+      height: custom.height || 260,
+      content: custom.content || '<ul><li>Strategic priorities and executive summary<ul><li>Key milestone deliverable and schedule</li><li>Performance metrics and KPI alignment</li></ul></li><li>Resource allocation and implementation plan<ul><li>Core project workflow and phases</li><li>Quality assurance & validation</li></ul></li><li>Conclusions and recommended next steps</li></ul>',
+      fontFamily: custom.fontFamily || 'JetBrains Mono',
+      fontSize: custom.fontSize || 20,
+      fontWeight: '400',
+      fontStyle: 'normal',
+      textDecoration: 'none',
+      color: custom.color || (this.isBlackGold() ? '#FAF8F2' : CONFIG.colors.udesBlack),
+      textAlign: 'left',
+      lineHeight: 1.6,
+      letterSpacing: 0,
+      backgroundColor: 'transparent',
+      padding: 12,
+      borderWidth: 0,
+      borderColor: 'transparent',
+      borderRadius: 0,
+      shadow: 'none',
+      opacity: 1
+    };
+  },
+
+  // 2. Shape Elements
+  createShape(shapeId = 'rect', custom = {}) {
+    const defaultDimensions = {
+      rect: { width: 240, height: 160 },
+      'rounded-rect': { width: 240, height: 160, borderRadius: 16 },
+      pill: { width: 200, height: 60, borderRadius: 999 },
+      circle: { width: 160, height: 160, borderRadius: 999 },
+      triangle: { width: 180, height: 160 },
+      diamond: { width: 160, height: 160 },
+      star: { width: 160, height: 160 },
+      'arrow-right': { width: 220, height: 90 },
+      'arrow-left': { width: 220, height: 90 },
+      callout: { width: 240, height: 160 },
+      hexagon: { width: 180, height: 180 }
+    };
+
+    const dims = defaultDimensions[shapeId] || { width: 200, height: 150 };
+
+    return {
+      ...(custom.id ? { id: custom.id } : {}),
+      type: 'shape',
+      shapeId: shapeId,
+      x: custom.x || 200,
+      y: custom.y || 200,
+      width: custom.width || dims.width,
+      height: custom.height || dims.height,
+      fillColor: custom.fillColor || (this.isBlackGold() ? '#D4AF37' : CONFIG.colors.udesGreen),
+      fillGradient: custom.fillGradient || null,
+      strokeColor: custom.strokeColor || 'transparent',
+      strokeWidth: custom.strokeWidth || 0,
+      strokeDash: custom.strokeDash || 'solid', // solid, dashed, dotted
+      borderRadius: custom.borderRadius !== undefined ? custom.borderRadius : (dims.borderRadius || 0),
+      shadowColor: custom.shadowColor || 'rgba(0,0,0,0.12)',
+      shadowBlur: custom.shadowBlur || 0,
+      shadowOffsetX: 0,
+      shadowOffsetY: custom.shadowBlur ? 4 : 0,
+      opacity: custom.opacity !== undefined ? custom.opacity : 1
+    };
+  },
+
+  // 3. Image Elements
+  createImage(src, custom = {}) {
+    return {
+      ...(custom.id ? { id: custom.id } : {}),
+      type: 'image',
+      src: src,
+      x: custom.x || 150,
+      y: custom.y || 150,
+      width: custom.width || 380,
+      height: custom.height || 260,
+      aspectRatio: custom.aspectRatio || 1.46,
+      objectFit: custom.objectFit || 'contain',
+      ...(custom.svgLogoType ? { svgLogoType: custom.svgLogoType } : {}),
+      borderRadius: custom.borderRadius !== undefined ? custom.borderRadius : 8,
+      borderWidth: custom.borderWidth || 0,
+      borderColor: custom.borderColor || '#E2E8F0',
+      shadowColor: custom.shadowColor || 'rgba(0,0,0,0.1)',
+      shadowBlur: custom.shadowBlur !== undefined ? custom.shadowBlur : 8,
+      shadowOffsetY: custom.shadowOffsetY || 4,
+      shadowOffsetX: 0,
+      opacity: custom.opacity !== undefined ? custom.opacity : 1,
+      grayscale: custom.grayscale || 0,
+      brightness: custom.brightness || 100,
+      contrast: custom.contrast || 100
+    };
+  },
+
+  // 4. Icon Elements (FontAwesome)
+  createIcon(iconClass = 'fa-lightbulb', custom = {}) {
+    return {
+      ...(custom.id ? { id: custom.id } : {}),
+      type: 'icon',
+      iconClass: iconClass.startsWith('fa-') ? `fa-solid ${iconClass}` : iconClass,
+      x: custom.x || 200,
+      y: custom.y || 200,
+      width: custom.width || 90,
+      height: custom.height || 90,
+      iconColor: custom.iconColor || (this.isBlackGold() ? '#D4AF37' : CONFIG.colors.udesGreen),
+      backgroundColor: custom.backgroundColor || 'transparent',
+      borderRadius: custom.borderRadius || 12,
+      borderWidth: custom.borderWidth || 0,
+      borderColor: 'transparent',
+      shadowBlur: 0,
+      opacity: 1
+    };
+  },
+
+  // 5. Table Elements
+  createTable(rows = 3, cols = 3, custom = {}) {
+    const data = [];
+    for (let r = 0; r < rows; r++) {
+      const row = [];
+      for (let c = 0; c < cols; c++) {
+        if (r === 0) {
+          row.push(`Column ${c + 1}`);
+        } else {
+          row.push(`Data ${r}.${c + 1}`);
+        }
+      }
+      data.push(row);
+    }
+
+    return {
+      ...(custom.id ? { id: custom.id } : {}),
+      type: 'table',
+      rows: rows,
+      cols: cols,
+      data: custom.data || data,
+      x: custom.x || 100,
+      y: custom.y || 160,
+      width: custom.width || 600,
+      height: custom.height || 220,
+      headerBg: custom.headerBg || (this.isBlackGold() ? '#D4AF37' : CONFIG.colors.udesGreen),
+      headerColor: custom.headerColor || (this.isBlackGold() ? '#09090B' : '#FFFFFF'),
+      headerFontFamily: custom.headerFontFamily || 'JetBrains Mono',
+      headerFontSize: custom.headerFontSize || 15,
+      bodyBg: custom.bodyBg || (this.isBlackGold() ? '#141418' : '#FFFFFF'),
+      bodyColor: custom.bodyColor || (this.isBlackGold() ? '#FAF8F2' : CONFIG.colors.udesBlack),
+      bodyFontFamily: custom.bodyFontFamily || 'JetBrains Mono',
+      bodyFontSize: custom.bodyFontSize || 14,
+      alternateRowBg: custom.alternateRowBg || (this.isBlackGold() ? '#1D1A12' : '#F8FAFC'),
+      borderColor: custom.borderColor || (this.isBlackGold() ? '#4A3E24' : '#CBD5E1'),
+      borderWidth: 1,
+      borderRadius: 8,
+      shadowBlur: 6,
+      opacity: 1
+    };
+  },
+
+  // 6. Chart Elements
+  createChart(chartType = 'bar', custom = {}) {
+    return {
+      ...(custom.id ? { id: custom.id } : {}),
+      type: 'chart',
+      chartType: chartType, // 'bar', 'line', 'pie', 'doughnut'
+      x: custom.x || 120,
+      y: custom.y || 140,
+      width: custom.width || 560,
+      height: custom.height || 340,
+      chartTitle: custom.chartTitle || 'Key Performance Indicators',
+      labels: custom.labels || ['2023', '2024', '2025', '2026', '2027'],
+      datasets: custom.datasets || [
+        {
+          label: 'UdeS Growth (%)',
+          data: [42, 65, 82, 91, 98],
+          backgroundColor: [
+            CONFIG.colors.udesGreen,
+            CONFIG.colors.udesForest,
+            CONFIG.colors.udesLime,
+            CONFIG.colors.udesSlate,
+            CONFIG.colors.accentGold
+          ],
+          borderColor: CONFIG.colors.udesForest,
+          borderWidth: 2
+        }
+      ],
+      backgroundColor: custom.backgroundColor || (this.isBlackGold() ? '#141418' : '#FFFFFF'),
+      borderRadius: custom.borderRadius !== undefined ? custom.borderRadius : 12,
+      borderWidth: custom.borderWidth !== undefined ? custom.borderWidth : 1,
+      borderColor: custom.borderColor || (this.isBlackGold() ? '#4A3E24' : '#E2E8F0'),
+      shadowBlur: 8,
+      opacity: 1
+    };
+  },
+
+  // 7. Line Elements
+  createLine(custom = {}) {
+    return {
+      ...(custom.id ? { id: custom.id } : {}),
+      type: 'line',
+      x: custom.x || 100,
+      y: custom.y || 250,
+      width: custom.width || 450,
+      height: custom.height || 4,
+      lineColor: custom.lineColor || (this.isBlackGold() ? '#D4AF37' : CONFIG.colors.udesGreen),
+      lineWidth: custom.lineWidth || 4,
+      lineStyle: custom.lineStyle || 'solid',
+      opacity: 1
+    };
+  },
+
+  // 8. Self-Contained HTML Elements
+  createHtmlElement(htmlContent = '', custom = {}) {
+    return {
+      ...(custom.id ? { id: custom.id } : {}),
+      type: 'html',
+      x: custom.x || 80,
+      y: custom.y || 80,
+      width: custom.width || 800,
+      height: custom.height || 480,
+      htmlContent: htmlContent || '<div style="padding:24px;background:linear-gradient(135deg,#00A350 0%,#087E5B 100%);color:#ffffff;border-radius:12px;font-family:sans-serif;box-shadow:0 10px 25px rgba(0,0,0,0.2);">\n  <h2 style="margin:0 0 10px 0;font-size:24px;">Self-Contained HTML</h2>\n  <p style="margin:0;font-size:15px;opacity:0.95;">Interactive markup, inline CSS, SVG, or embedded widgets.</p>\n</div>',
+      backgroundColor: custom.backgroundColor || 'transparent',
+      borderRadius: custom.borderRadius || 8,
+      borderWidth: custom.borderWidth || 0,
+      borderColor: custom.borderColor || '#E2E8F0',
+      shadowBlur: custom.shadowBlur || 8,
+      opacity: custom.opacity !== undefined ? custom.opacity : 1
+    };
+  }
+};
+
+window.ElementFactory = ElementFactory;

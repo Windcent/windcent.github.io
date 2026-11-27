@@ -1,0 +1,288 @@
+/* ==========================================================================
+   SlideMAKER - Fullscreen Presenter Mode, Laser Pointer & HUD
+   ========================================================================== */
+
+.presenter-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #000000;
+  z-index: 10000;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.25s ease;
+}
+
+.presenter-container.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+  display: none;
+}
+
+.presenter-viewport {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.presenter-slide-stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  background-color: #ffffff;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+  border-radius: 2px;
+}
+
+.presenter-elements-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Virtual Glowing Laser Pointer */
+.laser-pointer-dot {
+  position: fixed;
+  width: 8px;
+  height: 8px;
+  background: #FF0033; /* Vivid Laser Red */
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 10005;
+  transform: translate(-50%, -50%);
+  display: none;
+  box-shadow: 0 0 6px #FF0033, 0 0 12px rgba(255, 0, 51, 0.85), 0 0 20px rgba(255, 23, 68, 0.6);
+  animation: laserPulse 1s infinite alternate;
+}
+
+@keyframes laserPulse {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 0.95; }
+  100% { transform: translate(-50%, -50%) scale(1.25); opacity: 1; }
+}
+
+/* Floating Presenter HUD Bar */
+.presenter-hud {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+  z-index: 10002;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.presenter-hud.is-hidden {
+  opacity: 0;
+  transform: translateX(-50%) translateY(20px);
+  pointer-events: none;
+}
+
+.hud-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.hud-btn:hover {
+  background: var(--udes-green);
+  border-color: var(--udes-green);
+  transform: scale(1.08);
+}
+
+.hud-btn.is-active {
+  background: #FF0033;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(255, 0, 51, 0.7);
+}
+
+.hud-btn-exit:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+}
+
+.hud-counter {
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #F8FAFC;
+  min-width: 60px;
+  text-align: center;
+}
+
+.hud-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.hud-timer {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  color: var(--udes-lime);
+  background: rgba(var(--accent-rgb), 0.18);
+  padding: 4px 10px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
+}
+
+/* Presenter List & Levels Styles */
+.presenter-elements-layer .element-inner ul,
+.presenter-elements-layer .element-inner ol {
+  margin: 0.25em 0;
+  padding-left: 1.4em;
+  box-sizing: border-box;
+  text-align: inherit;
+}
+
+.presenter-elements-layer .element-inner ul {
+  list-style-type: disc;
+}
+
+.presenter-elements-layer .element-inner ol {
+  list-style-type: decimal;
+}
+
+.presenter-elements-layer .element-inner li {
+  margin-bottom: 0.35em;
+  line-height: inherit;
+  list-style-position: outside;
+}
+
+.presenter-elements-layer .element-inner li:last-child {
+  margin-bottom: 0;
+}
+
+.presenter-elements-layer .element-inner ul ul,
+.presenter-elements-layer .element-inner ol ul {
+  list-style-type: circle;
+  margin: 0.2em 0;
+  padding-left: 1.3em;
+}
+
+.presenter-elements-layer .element-inner ol ol,
+.presenter-elements-layer .element-inner ul ol {
+  list-style-type: lower-alpha;
+  margin: 0.2em 0;
+  padding-left: 1.3em;
+}
+
+.presenter-elements-layer .element-inner ul ul ul,
+.presenter-elements-layer .element-inner ol ul ul,
+.presenter-elements-layer .element-inner ul ol ul,
+.presenter-elements-layer .element-inner ol ol ul {
+  list-style-type: square;
+  margin: 0.15em 0;
+  padding-left: 1.3em;
+}
+
+.presenter-elements-layer .element-inner ol ol ol,
+.presenter-elements-layer .element-inner ul ol ol,
+.presenter-elements-layer .element-inner ul ul ol,
+.presenter-elements-layer .element-inner ol ul ol {
+  list-style-type: lower-roman;
+  margin: 0.15em 0;
+  padding-left: 1.3em;
+}
+
+/* ==========================================================================
+   Presenter Speaker Notes Overlay
+   ========================================================================== */
+
+.hud-btn.is-active-notes {
+  background: var(--udes-green);
+  border-color: var(--udes-lime);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.65);
+}
+
+.presenter-notes-overlay {
+  position: fixed;
+  right: 24px;
+  bottom: 84px;
+  width: min(400px, calc(100vw - 48px));
+  max-height: 260px;
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(var(--accent-bright-rgb), 0.35);
+  border-radius: 12px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.65);
+  z-index: 10003;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.presenter-notes-overlay.is-hidden {
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+}
+
+.presenter-notes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 12px;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.presenter-notes-close {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.presenter-notes-close:hover {
+  color: #ffffff;
+}
+
+.presenter-notes-body {
+  padding: 12px 14px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #e2e8f0;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+
+.presenter-notes-body.is-empty {
+  color: #94a3b8;
+  font-style: italic;
+}
