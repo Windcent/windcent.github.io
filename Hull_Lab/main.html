@@ -106,6 +106,20 @@
         </div>
       </div>
 
+      <!-- Drag Sources Ratio Bar (Wave / Induced / Skin) -->
+      <div class="bg-black/75 backdrop-blur-sm border border-amber-500/20 rounded-xl px-3 py-1.5 flex flex-col gap-1">
+        <div class="flex items-center justify-between text-[10px] font-mono">
+          <span class="text-[#fca5a5]">Wave</span>
+          <span class="text-[#fdba74]">Induced</span>
+          <span class="text-stone-300">Skin</span>
+        </div>
+        <div class="h-1.5 w-full rounded-full overflow-hidden flex bg-zinc-900 border border-zinc-800">
+          <div id="barDragWave" style="width: 0%" class="bg-[#f87171] transition-all duration-100"></div>
+          <div id="barDragInduced" style="width: 0%" class="bg-[#fb923c] transition-all duration-100"></div>
+          <div id="barDragSkin" style="width: 0%" class="bg-stone-300 transition-all duration-100"></div>
+        </div>
+      </div>
+
       <ul id="regimeNotes" class="bg-black/75 backdrop-blur-sm border border-amber-500/20 rounded-xl px-3 py-2 text-[11px] leading-snug text-stone-300 space-y-1 list-disc list-inside marker:text-amber-400">
         <li>Hydrostatic buoyancy supports nearly all hull weight</li>
         <li>Full keel remains wetted; CP stays close to CG</li>
@@ -121,23 +135,42 @@
       <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#facc15]"></span><strong class="text-[#fde047]">T</strong> Thrust</span>
       <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#fb923c]"></span><strong class="text-[#fdba74]">F</strong> Total</span>
     </div>
+
+    <!-- Live Drag vs Speed Graph (Top-Right) -->
+    <div class="pointer-events-none absolute top-4 right-4 w-60 sm:w-64 bg-black/75 backdrop-blur-sm border border-amber-500/20 rounded-xl px-3 py-2 flex flex-col gap-1.5 select-none">
+      <div class="flex items-center justify-between text-[10px] font-mono">
+        <span class="text-amber-200 font-semibold">Drag vs Speed</span>
+        <div class="flex items-center gap-2 text-[9px]">
+          <span class="text-[#fde047]">Tot</span>
+          <span class="text-[#fca5a5]">Wav</span>
+          <span class="text-[#fdba74]">Ind</span>
+          <span class="text-stone-300">Skn</span>
+        </div>
+      </div>
+      <canvas id="dragGraphCanvas" class="block w-full h-[112px]"></canvas>
+    </div>
   </main>
 
   <!-- Minimal Black & Gold Vertical Speed Side Pane -->
   <aside class="w-44 sm:w-48 flex-shrink-0 h-full border-l border-amber-500/20 bg-[#0a0908]/95 backdrop-blur-md px-3 py-3.5 flex flex-col gap-3 select-none">
-    <!-- Hull Type Selector (Planing Hull / Trawler) -->
+    <!-- Hull Type Selector (Planing Hull / Displacement Hull) -->
     <div class="grid grid-cols-2 gap-1 p-0.5 rounded-lg bg-[#050506] border border-amber-500/20">
-      <button id="btnHullSkiff" type="button" class="py-1 px-1 rounded-md font-mono text-[10px] leading-tight font-semibold bg-amber-400 text-black transition">
+      <button id="btnHullSkiff" type="button" class="py-1 px-1 rounded-md font-sans text-[10px] tracking-tight leading-tight font-semibold bg-amber-400 text-black transition">
         Planing<br />Hull
       </button>
-      <button id="btnHullTrawler" type="button" class="py-1 px-1 rounded-md font-mono text-[10px] leading-tight font-medium text-stone-400 hover:text-amber-200 transition">
-        Trawler
+      <button id="btnHullTrawler" type="button" class="py-1 px-1 rounded-md font-sans text-[10px] tracking-tight leading-tight font-medium text-stone-400 hover:text-amber-200 transition">
+        Displacement<br />Hull
       </button>
     </div>
 
-    <!-- Live Speed & Trim Readout (Unitless) -->
-    <div class="font-mono text-xs sm:text-sm font-semibold text-amber-300 tabular-nums text-center border-b border-amber-500/15 pb-2">
-      V <span id="hudSpeed">0.0</span> · θ <span id="hudTrim">0.0</span>
+    <!-- Live Speed & Trim Readout -->
+    <div class="font-mono tabular-nums text-center border-b border-amber-500/15 pb-2 flex flex-col gap-0.5">
+      <div class="text-xs sm:text-sm font-semibold text-amber-300">
+        <span id="hudSpeed">0.0</span> kn · θ <span id="hudTrim">0.0</span>°
+      </div>
+      <div class="text-[10px] font-medium text-stone-400">
+        <span id="hudSpeedMs">0.0</span> m/s
+      </div>
     </div>
 
     <!-- Vertical Speed Bar, Regime Scale & Clickable POI Markers -->
@@ -152,7 +185,7 @@
         tabindex="0"
         aria-label="Boat Speed"
         aria-valuemin="0"
-        aria-valuemax="28"
+        aria-valuemax="35"
         aria-valuenow="0"
         class="relative w-5 h-full flex justify-center cursor-ns-resize touch-none flex-shrink-0"
       >
@@ -165,13 +198,19 @@
       <div id="poiMarkers" class="relative flex-1 h-full"></div>
     </div>
 
-    <!-- CG Position, Vector Visibility Toggle & Playback Controls -->
+    <!-- CG, Weight, Vector Visibility & Playback Controls -->
     <div class="flex flex-col gap-2 pt-2 border-t border-amber-500/15">
       <!-- Unitless CG Longitudinal Position Slider -->
       <div class="flex flex-col gap-1 px-1">
-        <div class="flex items-center justify-between text-[11px] font-mono">
-          <label for="cgSlider" class="text-stone-400">CG</label>
-          <span id="hudCG" class="text-amber-300 tabular-nums">0.37</span>
+        <div class="flex items-center justify-between text-[10px] font-mono">
+          <div class="flex items-center gap-1.5">
+            <label for="cgSlider" class="text-stone-400">CG</label>
+            <span id="hudCG" class="text-amber-300 tabular-nums">0.37</span>
+          </div>
+          <label class="flex items-center gap-1 text-stone-400 hover:text-amber-200 cursor-pointer transition">
+            <span>Sweep</span>
+            <input id="toggleCGSweep" type="checkbox" class="w-3 h-3 accent-amber-400 cursor-pointer" />
+          </label>
         </div>
         <input
           id="cgSlider"
@@ -189,16 +228,38 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-2 gap-1.5">
-        <label class="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#070708] border border-amber-500/20 cursor-pointer hover:border-amber-500/45 transition">
-          <span class="text-[10px] font-mono text-stone-300">Vectors</span>
-          <input id="toggleVectors" type="checkbox" checked class="w-3.5 h-3.5 accent-amber-400 cursor-pointer" />
-        </label>
-        <label class="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#070708] border border-amber-500/20 cursor-pointer hover:border-amber-500/45 transition">
-          <span class="text-[10px] font-mono text-stone-300">CG Sweep</span>
-          <input id="toggleCGSweep" type="checkbox" class="w-3.5 h-3.5 accent-amber-400 cursor-pointer" />
-        </label>
+      <!-- Unitless Weight Multiplier Slider -->
+      <div class="flex flex-col gap-1 px-1">
+        <div class="flex items-center justify-between text-[10px] font-mono">
+          <div class="flex items-center gap-1.5">
+            <label for="weightSlider" class="text-stone-400">Weight</label>
+            <span id="hudWeight" class="text-amber-300 tabular-nums">1.00</span>
+          </div>
+          <label class="flex items-center gap-1 text-stone-400 hover:text-amber-200 cursor-pointer transition">
+            <span>Sweep</span>
+            <input id="toggleWeightSweep" type="checkbox" class="w-3 h-3 accent-amber-400 cursor-pointer" />
+          </label>
+        </div>
+        <input
+          id="weightSlider"
+          type="range"
+          min="0.50"
+          max="1.50"
+          step="0.01"
+          value="1.00"
+          aria-label="Hull Weight Multiplier"
+          class="w-full"
+        />
+        <div class="flex justify-between text-[9px] font-mono text-stone-500">
+          <span>Light</span>
+          <span>Heavy</span>
+        </div>
       </div>
+
+      <label class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-[#070708] border border-amber-500/20 cursor-pointer hover:border-amber-500/45 transition">
+        <span class="text-[10px] font-mono text-stone-300">Force Vectors</span>
+        <input id="toggleVectors" type="checkbox" checked class="w-3.5 h-3.5 accent-amber-400 cursor-pointer" />
+      </label>
 
       <div class="grid grid-cols-3 gap-1">
         <button
@@ -267,9 +328,10 @@
         ventScale: 1.0,         // Sharp transom clean ventilation
         waveDragScale: 1.0,
         maxTrimRad: (10 * Math.PI) / 180,
-        maxSpeedKn: 28.0,
-        rampRate: 1.65,
+        maxSpeedKn: 35.0,
+        rampRate: 2.05,
         pois: [
+          { kn: 35.0, label: 'Max', textCls: 'text-yellow-200 hover:text-yellow-100', tickCls: 'bg-yellow-200' },
           { kn: 23.0, label: 'Plane', textCls: 'text-yellow-300/90 hover:text-yellow-200', tickCls: 'bg-yellow-300' },
           { kn: 14.0, label: 'Semi', textCls: 'text-stone-400 hover:text-amber-300', tickCls: 'bg-amber-400/70' },
           { kn: 8.2, label: 'Hump', textCls: 'text-amber-400 hover:text-yellow-300', tickCls: 'bg-amber-400' },
@@ -295,9 +357,10 @@
         ventScale: 0.22,        // Tucked stern stays mostly wet
         waveDragScale: 2.25,    // Steep displacement hull-speed wave resistance
         maxTrimRad: (8 * Math.PI) / 180,
-        maxSpeedKn: 12.0,       // Scaled displacement trawler speed envelope
-        rampRate: 0.85,
+        maxSpeedKn: 20.0,       // Scaled displacement trawler speed envelope
+        rampRate: 1.25,
         pois: [
+          { kn: 20.0, label: 'Max', textCls: 'text-yellow-200 hover:text-yellow-100', tickCls: 'bg-yellow-200' },
           { kn: 11.2, label: 'Semi', textCls: 'text-amber-300 hover:text-yellow-200', tickCls: 'bg-amber-300' },
           { kn: 8.2, label: 'Hump', textCls: 'text-amber-400 hover:text-yellow-300', tickCls: 'bg-amber-400' },
           { kn: 5.5, label: 'Displacement', textCls: 'text-stone-300 hover:text-amber-300', tickCls: 'bg-amber-500/70' },
@@ -309,6 +372,13 @@
 
     const HULL = { ...HULL_PROFILES.skiff };
     HULL.weight = HULL.mass * G;
+
+    function applyHullWeight(scale) {
+      const profile = HULL_PROFILES[HULL.type];
+      HULL.mass = profile.mass * scale;
+      HULL.weight = HULL.mass * G;
+      HULL.Iyy = profile.Iyy * scale;
+    }
 
     // World coordinate bounds for the 1D water grid (boat midship sits at X = 0)
     const WORLD = {
@@ -871,6 +941,9 @@
         thrustZ,
         totalThrust,
         totalDrag,
+        waveDrag: humpDrag,
+        inducedDrag,
+        skinDrag,
         xCB,
         xCP,
         cpWorld,
@@ -1019,11 +1092,14 @@
       speedKn: 0.0,
       targetSpeedKn: 0.0,
       lcgFrac: 0.37,
+      weightScale: 1.0,
       chopAmp: 0.0,
       autoRamp: false,
       paused: false,
       cgSweep: false,
       cgSweepPhase: 0,
+      weightSweep: false,
+      weightSweepPhase: 0,
       showVectors: true,
       speedTransition: null,
       hull: { zCG: 0.16, vz: 0, theta: 0.015, omega: 0 },
@@ -1646,9 +1722,10 @@
         ctx.restore();
       };
 
-      // Separate Force Vectors (centered on CG, uniform scale, symbolic labels only)
+      // Separate Force Vectors (centered on CG, uniform scale relative to nominal hull weight)
       if (appState.showVectors) {
-        const forceScale = 105 / HULL.weight; // Uniform scale: 105 px per 1.0 * Weight
+        const nominalWeight = HULL_PROFILES[HULL.type].mass * G;
+        const forceScale = 105 / nominalWeight; // Uniform scale: 105 px per 1.0 * Nominal Weight
 
         // 1. Hydrostatic Buoyancy (B) upward from CG (slight left offset to separate from L)
         if (ev.fBuoyTotal > 150) {
@@ -1756,10 +1833,14 @@
       regimeNotes: document.getElementById('regimeNotes'),
       barStatic: document.getElementById('barStatic'),
       barDynamic: document.getElementById('barDynamic'),
+      barDragWave: document.getElementById('barDragWave'),
+      barDragInduced: document.getElementById('barDragInduced'),
+      barDragSkin: document.getElementById('barDragSkin'),
       hudFroude: document.getElementById('hudFroude'),
       hudReynolds: document.getElementById('hudReynolds'),
       hudDrag: document.getElementById('hudDrag'),
       hudSpeed: document.getElementById('hudSpeed'),
+      hudSpeedMs: document.getElementById('hudSpeedMs'),
       hudTrim: document.getElementById('hudTrim'),
       speedTrack: document.getElementById('speedTrack'),
       speedFill: document.getElementById('speedFill'),
@@ -1768,9 +1849,13 @@
       poiMarkers: document.getElementById('poiMarkers'),
       cgSlider: document.getElementById('cgSlider'),
       hudCG: document.getElementById('hudCG'),
+      weightSlider: document.getElementById('weightSlider'),
+      hudWeight: document.getElementById('hudWeight'),
       toggleVectors: document.getElementById('toggleVectors'),
       toggleCGSweep: document.getElementById('toggleCGSweep'),
+      toggleWeightSweep: document.getElementById('toggleWeightSweep'),
       forceLegend: document.getElementById('forceLegend'),
+      dragGraphCanvas: document.getElementById('dragGraphCanvas'),
       btnHullSkiff: document.getElementById('btnHullSkiff'),
       btnHullTrawler: document.getElementById('btnHullTrawler'),
       btnPause: document.getElementById('btnPause'),
@@ -1877,11 +1962,16 @@
       const ev = appState.lastEval;
       const trimDeg = (appState.hull.theta * 180) / Math.PI;
       el.hudSpeed.textContent = appState.speedKn.toFixed(1);
+      el.hudSpeedMs.textContent = (appState.speedKn * KNOTS_TO_MS).toFixed(1);
       el.hudTrim.textContent = trimDeg.toFixed(1);
       syncSpeedBarUI(appState.speedKn);
       if (appState.cgSweep) {
         el.cgSlider.value = appState.lcgFrac.toFixed(3);
         el.hudCG.textContent = appState.lcgFrac.toFixed(2);
+      }
+      if (appState.weightSweep) {
+        el.weightSlider.value = appState.weightScale.toFixed(2);
+        el.hudWeight.textContent = appState.weightScale.toFixed(2);
       }
 
       if (ev) {
@@ -1900,6 +1990,19 @@
         const dynamicPct = 100 - staticPct;
         el.barStatic.style.width = `${staticPct.toFixed(1)}%`;
         el.barDynamic.style.width = `${dynamicPct.toFixed(1)}%`;
+
+        if (ev.totalDrag > 0.5) {
+          const wavePct = Math.max(0, Math.min(100, (ev.waveDrag / ev.totalDrag) * 100));
+          const inducedPct = Math.max(0, Math.min(100 - wavePct, (ev.inducedDrag / ev.totalDrag) * 100));
+          const skinPct = Math.max(0, 100 - wavePct - inducedPct);
+          el.barDragWave.style.width = `${wavePct.toFixed(1)}%`;
+          el.barDragInduced.style.width = `${inducedPct.toFixed(1)}%`;
+          el.barDragSkin.style.width = `${skinPct.toFixed(1)}%`;
+        } else {
+          el.barDragWave.style.width = '0%';
+          el.barDragInduced.style.width = '0%';
+          el.barDragSkin.style.width = '0%';
+        }
 
         // Exact Fr boundaries matched to vertical regime scale & POI markers:
         // Displacement: 0–6 (Fr < 0.44), Hump: 6–11 (0.44–0.81), Semi: 11–17.5 (0.81–1.29), Planing: 17.5+ (>= 1.29)
@@ -1988,8 +2091,13 @@
       }
 
       if (appState.cgSweep) {
-        appState.cgSweepPhase += dt * 0.9; // Smooth ~7s oscillation between 0.30 and 0.50
+        appState.cgSweepPhase += dt * 0.30; // Slow ~21s oscillation between 0.30 and 0.50
         appState.lcgFrac = 0.40 + 0.10 * Math.sin(appState.cgSweepPhase);
+      }
+      if (appState.weightSweep) {
+        appState.weightSweepPhase += dt * 0.30; // Slow ~21s oscillation between 0.50 and 1.50
+        appState.weightScale = 1.00 + 0.50 * Math.sin(appState.weightSweepPhase);
+        applyHullWeight(appState.weightScale);
       }
 
       const speedMs = appState.speedKn * KNOTS_TO_MS;
@@ -2020,6 +2128,189 @@
         : 'flex items-center justify-center py-2 px-1.5 rounded-lg font-medium text-[11px] bg-zinc-900 hover:bg-zinc-800 active:scale-[0.98] text-amber-200 border border-amber-500/30 transition';
     }
 
+    // =========================================================================
+    // 9B. DRAG VS SPEED GRAPH (STEADY-STATE CURVE + LIVE OPERATING POINT)
+    // =========================================================================
+    const dragGraphCtx = el.dragGraphCanvas.getContext('2d');
+    const dragGraphCache = {
+      key: '',
+      lastComputeMs: 0,
+      maxKn: 28,
+      maxDrag: 1,
+      points: [],
+      pad: { l: 26, r: 8, t: 8, b: 18 },
+    };
+
+    function computeDragCurve() {
+      const maxKn = HULL.maxSpeedKn;
+      const samples = 36;
+      const points = [];
+      let prevState = null;
+      let maxDrag = 0.5;
+
+      for (let i = 0; i <= samples; i++) {
+        const kn = (i / samples) * maxKn;
+        const speedMs = kn * KNOTS_TO_MS;
+        const st = prevState
+          ? { zCG: prevState.zCG, vz: 0, theta: prevState.theta, omega: 0 }
+          : { zCG: 0.16, vz: 0, theta: 0.02, omega: 0 };
+
+        const steps = i === 0 ? 100 : 45;
+        const dt = 0.022;
+        for (let s = 0; s < steps; s++) {
+          const res = evaluateHullForces(st, speedMs, appState.lcgFrac, null, false);
+          st.vz = (st.vz + (res.fTotalZ / HULL.mass) * dt) * 0.84;
+          st.omega = (st.omega + (res.tauTotal / HULL.Iyy) * dt) * 0.84;
+          st.zCG += st.vz * dt;
+          st.theta += st.omega * dt;
+          enforceHullConstraints(st, speedMs, appState.lcgFrac, null);
+        }
+        prevState = st;
+        const ev = evaluateHullForces(st, speedMs, appState.lcgFrac, null, false);
+        const total = ev.totalDrag / 1000;
+        const wave = ev.waveDrag / 1000;
+        const induced = ev.inducedDrag / 1000;
+        const skin = ev.skinDrag / 1000;
+        if (total > maxDrag) maxDrag = total;
+        points.push({ kn, total, wave, induced, skin });
+      }
+
+      dragGraphCache.maxKn = maxKn;
+      dragGraphCache.maxDrag = maxDrag * 1.15;
+      dragGraphCache.points = points;
+    }
+
+    function renderDragGraph(nowMs) {
+      const canvas = el.dragGraphCanvas;
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width < 10 || rect.height < 10) return;
+
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const targetW = Math.round(rect.width * dpr);
+      const targetH = Math.round(rect.height * dpr);
+      if (canvas.width !== targetW || canvas.height !== targetH) {
+        canvas.width = targetW;
+        canvas.height = targetH;
+      }
+
+      const key = `${HULL.type}|${Math.round(appState.lcgFrac * 100)}|${Math.round(appState.weightScale * 50)}`;
+      if (dragGraphCache.key !== key && (nowMs - dragGraphCache.lastComputeMs > 90 || dragGraphCache.points.length === 0)) {
+        dragGraphCache.key = key;
+        dragGraphCache.lastComputeMs = nowMs;
+        computeDragCurve();
+      }
+
+      const ctx = dragGraphCtx;
+      const w = rect.width;
+      const h = rect.height;
+      const { l, r, t, b } = dragGraphCache.pad;
+      const pw = w - l - r;
+      const ph = h - t - b;
+      const maxKn = dragGraphCache.maxKn;
+      const ev = appState.lastEval;
+      const liveDrag = ev ? ev.totalDrag / 1000 : 0;
+      const maxY = Math.max(dragGraphCache.maxDrag, liveDrag * 1.12, 0.5);
+
+      const xOf = (kn) => l + (kn / maxKn) * pw;
+      const yOf = (val) => t + ph - (Math.min(maxY, Math.max(0, val)) / maxY) * ph;
+
+      ctx.save();
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+
+      // Subtle horizontal grid lines
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 2; i++) {
+        const gy = t + (ph * i) / 2;
+        ctx.beginPath();
+        ctx.moveTo(l, gy);
+        ctx.lineTo(l + pw, gy);
+        ctx.stroke();
+      }
+
+      // Vertical regime boundary guides (6, 11, 17.5 kn)
+      ctx.save();
+      ctx.setLineDash([2, 3]);
+      ctx.strokeStyle = 'rgba(251, 191, 36, 0.16)';
+      [6, 11, 17.5].forEach((bKn) => {
+        if (bKn < maxKn - 0.5) {
+          const gx = xOf(bKn);
+          ctx.beginPath();
+          ctx.moveTo(gx, t);
+          ctx.lineTo(gx, t + ph);
+          ctx.stroke();
+        }
+      });
+      ctx.restore();
+
+      const pts = dragGraphCache.points;
+      if (pts.length > 1) {
+        // Soft area fill under Total Drag curve
+        const fillGrad = ctx.createLinearGradient(0, t, 0, t + ph);
+        fillGrad.addColorStop(0, 'rgba(250, 204, 21, 0.18)');
+        fillGrad.addColorStop(1, 'rgba(250, 204, 21, 0.0)');
+        ctx.beginPath();
+        ctx.moveTo(xOf(pts[0].kn), t + ph);
+        for (let i = 0; i < pts.length; i++) {
+          ctx.lineTo(xOf(pts[i].kn), yOf(pts[i].total));
+        }
+        ctx.lineTo(xOf(pts[pts.length - 1].kn), t + ph);
+        ctx.closePath();
+        ctx.fillStyle = fillGrad;
+        ctx.fill();
+
+        // Component curves (Wave, Induced, Skin)
+        const strokeSeries = (prop, color, width, dash) => {
+          ctx.save();
+          if (dash) ctx.setLineDash(dash);
+          ctx.strokeStyle = color;
+          ctx.lineWidth = width;
+          ctx.beginPath();
+          for (let i = 0; i < pts.length; i++) {
+            const px = xOf(pts[i].kn);
+            const py = yOf(pts[i][prop]);
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.stroke();
+          ctx.restore();
+        };
+
+        strokeSeries('skin', 'rgba(214, 211, 209, 0.65)', 1.0, [2, 2]);
+        strokeSeries('induced', 'rgba(251, 146, 60, 0.78)', 1.0, [3, 2]);
+        strokeSeries('wave', 'rgba(248, 113, 113, 0.85)', 1.1, null);
+        strokeSeries('total', '#fde047', 1.8, null);
+      }
+
+      // Live speed cursor hairline
+      const curX = xOf(Math.max(0, Math.min(maxKn, appState.speedKn)));
+      ctx.strokeStyle = 'rgba(253, 224, 71, 0.35)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(curX, t);
+      ctx.lineTo(curX, t + ph);
+      ctx.stroke();
+
+      // Axis labels
+      ctx.fillStyle = '#a8a29e';
+      ctx.font = '9px "JetBrains Mono", monospace';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(maxY.toFixed(1), l - 4, t + 2);
+      ctx.fillText('0', l - 4, t + ph);
+
+      ctx.textBaseline = 'top';
+      ctx.textAlign = 'left';
+      ctx.fillText('0', l, t + ph + 4);
+      ctx.textAlign = 'center';
+      ctx.fillText(`${Math.round(maxKn / 2)}`, l + pw * 0.5, t + ph + 4);
+      ctx.textAlign = 'right';
+      ctx.fillText(`${Math.round(maxKn)} kn`, l + pw, t + ph + 4);
+
+      ctx.restore();
+    }
+
     function animate(timestamp) {
       if (!lastTimestamp) lastTimestamp = timestamp;
       const frameDt = Math.min(0.05, Math.max(0.001, (timestamp - lastTimestamp) / 1000));
@@ -2035,6 +2326,7 @@
 
       renderSimulation();
       updateHUD();
+      renderDragGraph(timestamp);
       requestAnimationFrame(animate);
     }
 
@@ -2101,6 +2393,24 @@
       }
     });
 
+    el.weightSlider.addEventListener('input', () => {
+      appState.weightSweep = false;
+      el.toggleWeightSweep.checked = false;
+      appState.weightScale = parseFloat(el.weightSlider.value);
+      el.hudWeight.textContent = appState.weightScale.toFixed(2);
+      applyHullWeight(appState.weightScale);
+      appState.restState = solveSteadyState(0, appState.lcgFrac, null);
+    });
+
+    el.toggleWeightSweep.addEventListener('change', () => {
+      appState.weightSweep = el.toggleWeightSweep.checked;
+      if (appState.weightSweep) {
+        // Initialize phase seamlessly from current Weight multiplier
+        const clamped = Math.max(-1, Math.min(1, (appState.weightScale - 1.00) / 0.50));
+        appState.weightSweepPhase = Math.asin(clamped);
+      }
+    });
+
     el.toggleVectors.addEventListener('change', () => {
       appState.showVectors = el.toggleVectors.checked;
       el.forceLegend.classList.toggle('hidden', !appState.showVectors);
@@ -2110,11 +2420,11 @@
       const profile = HULL_PROFILES[type];
       if (!profile || HULL.type === type) return;
       Object.assign(HULL, profile);
-      HULL.weight = HULL.mass * G;
+      applyHullWeight(appState.weightScale);
       HULL_PANELS = buildHullPanels();
 
-      const activeCls = 'py-1 px-1 rounded-md font-mono text-[10px] leading-tight font-semibold bg-amber-400 text-black transition';
-      const inactiveCls = 'py-1 px-1 rounded-md font-mono text-[10px] leading-tight font-medium text-stone-400 hover:text-amber-200 transition';
+      const activeCls = 'py-1 px-1 rounded-md font-sans text-[10px] tracking-tight leading-tight font-semibold bg-amber-400 text-black transition';
+      const inactiveCls = 'py-1 px-1 rounded-md font-sans text-[10px] tracking-tight leading-tight font-medium text-stone-400 hover:text-amber-200 transition';
       el.btnHullSkiff.className = type === 'skiff' ? activeCls : inactiveCls;
       el.btnHullTrawler.className = type === 'trawler' ? activeCls : inactiveCls;
 
@@ -2152,12 +2462,18 @@
       setAutoRamp(false);
       appState.cgSweep = false;
       el.toggleCGSweep.checked = false;
+      appState.weightSweep = false;
+      el.toggleWeightSweep.checked = false;
       appState.speedTransition = null;
       appState.speedKn = 0;
       appState.targetSpeedKn = 0;
       appState.lcgFrac = 0.37;
       el.cgSlider.value = '0.37';
       el.hudCG.textContent = '0.37';
+      appState.weightScale = 1.0;
+      el.weightSlider.value = '1.00';
+      el.hudWeight.textContent = '1.00';
+      applyHullWeight(1.0);
       appState.restState = solveSteadyState(0, appState.lcgFrac, null);
       syncSpeedBarUI(0);
 
