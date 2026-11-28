@@ -329,6 +329,7 @@
         waveDragScale: 1.0,
         maxTrimRad: (10 * Math.PI) / 180,
         maxSpeedKn: 35.0,
+        maxDragGraph: 5.0,
         rampRate: 2.05,
         pois: [
           { kn: 35.0, label: 'Max', textCls: 'text-yellow-200 hover:text-yellow-100', tickCls: 'bg-yellow-200' },
@@ -358,6 +359,7 @@
         waveDragScale: 2.25,    // Steep displacement hull-speed wave resistance
         maxTrimRad: (8 * Math.PI) / 180,
         maxSpeedKn: 20.0,       // Scaled displacement trawler speed envelope
+        maxDragGraph: 10.0,
         rampRate: 1.25,
         pois: [
           { kn: 20.0, label: 'Max', textCls: 'text-yellow-200 hover:text-yellow-100', tickCls: 'bg-yellow-200' },
@@ -2136,7 +2138,6 @@
       key: '',
       lastComputeMs: 0,
       maxKn: 28,
-      maxDrag: 1,
       points: [],
       pad: { l: 26, r: 8, t: 8, b: 18 },
     };
@@ -2146,7 +2147,6 @@
       const samples = 36;
       const points = [];
       let prevState = null;
-      let maxDrag = 0.5;
 
       for (let i = 0; i <= samples; i++) {
         const kn = (i / samples) * maxKn;
@@ -2171,12 +2171,10 @@
         const wave = ev.waveDrag / 1000;
         const induced = ev.inducedDrag / 1000;
         const skin = ev.skinDrag / 1000;
-        if (total > maxDrag) maxDrag = total;
         points.push({ kn, total, wave, induced, skin });
       }
 
       dragGraphCache.maxKn = maxKn;
-      dragGraphCache.maxDrag = maxDrag * 1.15;
       dragGraphCache.points = points;
     }
 
@@ -2207,9 +2205,7 @@
       const pw = w - l - r;
       const ph = h - t - b;
       const maxKn = dragGraphCache.maxKn;
-      const ev = appState.lastEval;
-      const liveDrag = ev ? ev.totalDrag / 1000 : 0;
-      const maxY = Math.max(dragGraphCache.maxDrag, liveDrag * 1.12, 0.5);
+      const maxY = HULL.maxDragGraph;
 
       const xOf = (kn) => l + (kn / maxKn) * pw;
       const yOf = (val) => t + ph - (Math.min(maxY, Math.max(0, val)) / maxY) * ph;

@@ -3,7 +3,7 @@ set -euo pipefail
 
 PORT="${1:-8000}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-URL="http://127.0.0.1:${PORT}/inverse-kinematics/"
+URL="http://127.0.0.1:${PORT}/inverse_kinematics_lab/"
 
 echo "Serving ${ROOT_DIR} on http://127.0.0.1:${PORT}"
 echo "  Profile : http://127.0.0.1:${PORT}/"
